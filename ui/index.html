@@ -14,7 +14,7 @@ try {
   }
 } catch (error) {}
 </script>
-<link rel="stylesheet" href="app.css?v=20261031-86">
+<link rel="stylesheet" href="app.css?v=20261031-87">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -218,7 +218,8 @@ try {
         <div class="page-title"><h1 id="likesTitle">喜欢同步</h1><p>同步发现红心并加入下载队列；下载完成后自动整理入库。</p></div>
         <div class="head-actions"><button id="btnLikesSync" class="btn primary">立即同步</button><button id="btnLikesReport" class="btn ghost hidden"><svg class="icon"><use href="#i-folder"/></svg>报告</button></div>
       </header>
-      <div class="likes-grid">
+      <div class="likes-scroll">
+        <div class="likes-grid">
         <section class="panel">
           <div class="panel-head"><div><h2>自动同步</h2><p id="likesScheduleText">客户端运行时在后台执行</p></div><div class="likes-head-actions"><span id="likesRunPill" class="status-pill status-skipped" role="status" aria-live="polite">空闲</span></div></div>
           <div class="likes-config">
@@ -245,6 +246,7 @@ try {
       <div class="panel likes-log">
         <div class="panel-head"><div><h2>同步动态</h2><p>历史运行记录；当前登录状态看右侧「来源」</p></div><button id="btnLikesRefresh" class="btn ghost small"><svg class="icon"><use href="#i-refresh"/></svg>刷新</button></div>
         <div id="likesEvents" class="likes-events"></div>
+      </div>
       </div>
     </section>
 
@@ -619,10 +621,11 @@ try {
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=9"></script>
 <script src="pure.js?v=3"></script>
-<script src="app.js?v=20261031-73"></script>
+<script src="app.js?v=20261031-74"></script>
 <script src="custom-select.js?v=1"></script>
 </body>
 </html>
+
 
 
 
