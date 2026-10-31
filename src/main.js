@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const http = require('node:http')
@@ -10,6 +10,7 @@ const { ExtensionHost } = require('./extension-host')
 const { LikesStore } = require('./likes')
 
 const isMac = process.platform === 'darwin'
+app.setAppUserModelId('com.local-sound-archive.app')
 
 const AUDIO_EXTENSIONS = new Set(['.flac', '.mp3', '.m4a', '.aac', '.wav', '.ogg', '.opus', '.wma'])
 const APP_ROOT = path.join(__dirname, '..')
@@ -440,6 +441,41 @@ async function syncLikesNow() {
   })
 }
 
+async function openSdkDoc(file) {
+  const target = path.join(APP_ROOT, 'extension-sdk', file)
+  if (!fs.existsSync(target)) return { ok: false, error: '文档不存在' }
+  const error = await shell.openPath(target)
+  return error ? { ok: false, error } : { ok: true }
+}
+
+function detectAgents() {
+  const candidates = [
+    { id: 'codex', name: 'Codex', command: 'codex' },
+    { id: 'claude', name: 'Claude Code', command: 'claude' },
+    { id: 'dsh', name: 'DSH', command: 'dsh' },
+  ]
+  return {
+    agents: candidates.map((agent) => {
+      const candidatesPath = []
+      for (const dir of String(process.env.PATH || '').split(path.delimiter)) {
+        if (!dir) continue
+        candidatesPath.push(path.join(dir, process.platform === 'win32' ? agent.command + '.cmd' : agent.command))
+        candidatesPath.push(path.join(dir, process.platform === 'win32' ? agent.command + '.exe' : agent.command))
+      }
+      const found = candidatesPath.find((candidate) => fs.existsSync(candidate)) || ''
+      return { ...agent, found: !!found, path: found }
+    }),
+  }
+}
+
+async function openLikesReport() {
+  const lastRun = await likesStore.readJson(likesStore.lastRunPath, null)
+  const report = lastRun && lastRun.report
+  if (!report || !fs.existsSync(report)) return { ok: false, error: '还没有同步报告' }
+  const error = await shell.openPath(report)
+  return error ? { ok: false, error } : { ok: true }
+}
+
 async function handleCommand(cmd, args) {
   switch (cmd) {
     case 'ready':
@@ -489,7 +525,27 @@ async function handleCommand(cmd, args) {
     case 'setExtensionSafeMode':
       return extensionStore.setSafeMode(!!args?.safeMode)
     case 'getAgents':
-      return { agents: [] }
+      return detectAgents()
+    case 'launchAgent': {
+      const id = String(args?.id || '')
+      if (!id) return { ok: false, error: '缺少开发工具 id' }
+      const workspace = path.join(DATA_DIR, 'agent-workspaces', id)
+      await fsp.mkdir(workspace, { recursive: true })
+      const error = await shell.openPath(workspace)
+      return error ? { ok: false, error } : { ok: true, workspace }
+    }
+    case 'openExtensionDocs':
+      return openSdkDoc('EXTENSIONS.md')
+    case 'openExtensionCapabilities':
+      return openSdkDoc('CAPABILITIES.md')
+    case 'openLikesReport':
+      return openLikesReport()
+    case 'maintain': {
+      const result = await buildLibrary()
+      return { ok: true, summary: { tracks: result.tracks.length, formats: result.formats, totalBytes: result.totalBytes } }
+    }
+    case 'clearFailed':
+      return { ok: false, error: 'Electron 端暂未接入失败任务清理' }
     case 'getAiControlStatus':
       return aiStatus()
     case 'setAiControlEnabled': {
@@ -581,6 +637,7 @@ async function createWindow() {
     minWidth: 960,
     minHeight: 620,
     backgroundColor: '#0b0d10',
+    icon: path.join(APP_ROOT, 'build', 'icon.png'),
     show: false,
     ...(isMac
       ? { titleBarStyle: 'hiddenInset' }
@@ -665,6 +722,7 @@ app.on('before-quit', () => {
     try { audioServer.close() } catch { }
   }
 })
+
 
 
 

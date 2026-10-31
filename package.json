@@ -23,6 +23,7 @@
       "ai-control/**/*",
       "extension-sdk/**/*",
       "scripts/**/*",
+      "build/**/*",
       "package.json"
     ],
     "extraMetadata": {
@@ -32,7 +33,8 @@
       "target": [
         "portable"
       ],
-      "artifactName": "LSA-${version}-win.${ext}"
+      "artifactName": "LSA-${version}-win.${ext}",
+      "icon": "build/icon.ico"
     },
     "mac": {
       "target": [
@@ -45,18 +47,21 @@
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "identity": null,
-      "notarize": false
+      "notarize": false,
+      "icon": "build/icon.png"
     },
     "linux": {
       "target": [
         "AppImage"
       ],
       "category": "Audio"
-    }
+    },
+    "icon": "build/icon.png"
   },
   "devDependencies": {
     "electron": "^38.0.0",
-    "electron-builder": "^26.0.0"
+    "electron-builder": "^26.0.0",
+    "png-to-ico": "^3.0.2"
   },
   "author": "LSA contributors"
 }
