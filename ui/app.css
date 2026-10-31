@@ -2299,35 +2299,15 @@ summary:focus-visible { outline: 2px solid var(--ui-accent, var(--accent)); outl
   }
 }
 
-/* Scrollbars are transient: no permanent rails in panels, modals or lists. */
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main) {
-  scrollbar-width: none;
+/* Native scroll rails are never shown anywhere; one overlay indicator handles every scroll region. */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main)::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main).is-scrolling {
-  scrollbar-width: thin;
-}
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main).is-scrolling::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main).is-scrolling::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--ui-muted, var(--muted)) 48%, transparent);
-  border-radius: 99px;
-}
-
-/* Native scroll rails are never shown. A slim indicator appears only while scrolling. */
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main)::-webkit-scrollbar {
+*::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
-}
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main) {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none;
 }
 #lsa-scroll-thumb {
   position: fixed;
