@@ -2767,3 +2767,17 @@ html[data-theme="green"] {
 .player-center .transport-play {
   overflow: visible !important;
 }
+
+/* Empty recordings should be a compact card, not a full-page blank panel. */
+#page-record .record-layout > .panel.record-empty {
+  align-self: start;
+  max-height: 380px;
+}
+#page-record .panel.record-empty .record-list {
+  flex: 0 0 auto;
+  min-height: 250px;
+}
+#page-record .panel.record-empty .record-list .empty {
+  min-height: 230px;
+  flex: 0 0 auto;
+}

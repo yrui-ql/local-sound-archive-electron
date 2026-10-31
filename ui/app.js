@@ -2924,6 +2924,8 @@ async function loadRecordings(reset = true) {
     } else {
       $('#recordList').insertAdjacentHTML('beforeend', files.map(recordRow).join(''))
     }
+    const recentPanel = $('#recordRecentPanel')
+    if (recentPanel) recentPanel.classList.toggle('record-empty', !$('#recordList').querySelector('.record-row'))
     state.recordHasMore = !!data.hasMore
     state.recordPage += 1
     $('#recordMoreWrap').classList.toggle('hidden', !state.recordHasMore)
