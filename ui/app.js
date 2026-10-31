@@ -1443,23 +1443,12 @@ async function handleAiCommand(action, args = {}) {
       throw new Error('未知 AI 控制动作：' + action);
   }
 }
-audio.addEventListener('play', () => { state.isPlaying = true; updatePlayButton(); });
-audio.addEventListener('pause', () => { state.isPlaying = false; updatePlayButton(); saveLastPlayback(); });
+audio.addEventListener('play', () => { state.isPlaying = true; updatePlayButton(); startSeekAnimation(); });
+audio.addEventListener('pause', () => { state.isPlaying = false; updatePlayButton(); stopSeekAnimation(); saveLastPlayback(); });
 audio.addEventListener('timeupdate', () => {
   const d = audio.duration || 0;
-  const seek = $('#seek');
-  $('#curTime').textContent = formatTime(audio.currentTime);
-  $('#durTime').textContent = formatTime(d);
-  if (d > 0) {
-    const progress = Math.max(0, Math.min(1, audio.currentTime / d));
-    const percent = (progress * 100).toFixed(2) + '%';
-    seek.value = String(Math.floor(progress * 1000));
-    seek.style.setProperty('--progress', percent);
-    if (!seekHovering) seek.style.setProperty('--hover', percent);
-    seek.title = formatTime(audio.currentTime) + ' / ' + formatTime(d);
-    $('#playerProgress').dataset.time = formatTime(audio.currentTime) + ' / ' + formatTime(d);
-  }
   syncLyricsProgress(audio.currentTime);
+  if (d > 0 && audio.paused) updateSeekVisual();
   const now = Date.now();
   if (state.playing && !audio.paused && now - lastPositionSaveAt > 2000) {
     lastPositionSaveAt = now;
@@ -1468,6 +1457,8 @@ audio.addEventListener('timeupdate', () => {
 });
 audio.addEventListener('loadedmetadata', () => {
   $('#durTime').textContent = formatTime(audio.duration || 0);
+  updateSeekVisual();
+  if (!audio.paused) startSeekAnimation();
   if (pendingResume > 1) {
     const duration = audio.duration || 0;
     audio.currentTime = duration > 0 ? Math.min(pendingResume, Math.max(0, duration - 1)) : pendingResume;
@@ -1713,6 +1704,8 @@ $('#btnPlayMode').addEventListener('click', () => {
 $('#seek').addEventListener('input', (e) => {
   if (!audio.duration) return;
   audio.currentTime = (Number(e.target.value) / 1000) * audio.duration;
+  seekDisplayTime = audio.currentTime;
+  seekLastFrameAt = performance.now();
   const progress = Math.max(0, Math.min(1, Number(e.target.value) / 1000));
   e.target.style.setProperty('--progress', (progress * 100).toFixed(2) + '%');
   if (!seekHovering) e.target.style.setProperty('--hover', (progress * 100).toFixed(2) + '%');
@@ -1720,6 +1713,53 @@ $('#seek').addEventListener('input', (e) => {
 const seekInput = $('#seek');
 const seekProgress = $('#playerProgress');
 const seekTip = $('#seekHoverTip');
+let seekScrubbing = false;
+let seekFrameId = 0;
+let seekDisplayTime = 0;
+let seekLastFrameAt = 0;
+function updateSeekVisual(force = false) {
+  const duration = audio.duration || 0;
+  if (!duration || seekScrubbing) return;
+  const now = performance.now();
+  if (force || audio.paused || !state.playing) {
+    seekDisplayTime = Math.max(0, Math.min(duration, audio.currentTime || 0));
+  } else {
+    const elapsed = seekLastFrameAt ? Math.min(0.1, (now - seekLastFrameAt) / 1000) : 0;
+    if (window.LSAPure) seekDisplayTime = window.LSAPure.smoothSeekTime(seekDisplayTime, audio.currentTime, elapsed, audio.playbackRate || 1);
+    else {
+      seekDisplayTime = Math.max(0, Math.min(duration, seekDisplayTime + elapsed * (audio.playbackRate || 1)));
+      const drift = (audio.currentTime || 0) - seekDisplayTime;
+      if (Math.abs(drift) > 2) seekDisplayTime = Math.max(0, Math.min(duration, audio.currentTime || 0));
+      else seekDisplayTime += drift * 0.2;
+    }
+    seekDisplayTime = Math.max(0, Math.min(duration, seekDisplayTime));
+  }
+  seekLastFrameAt = now;
+  const progress = Math.max(0, Math.min(1, seekDisplayTime / duration));
+  const percent = (progress * 100).toFixed(2) + '%';
+  seekInput.value = String(progress * 1000);
+  seekInput.style.setProperty('--progress', percent);
+  if (!seekHovering) seekInput.style.setProperty('--hover', percent);
+  $('#curTime').textContent = formatTime(seekDisplayTime);
+  $('#durTime').textContent = formatTime(duration);
+  seekInput.title = formatTime(seekDisplayTime) + ' / ' + formatTime(duration);
+  seekProgress.dataset.time = formatTime(seekDisplayTime) + ' / ' + formatTime(duration);
+}
+function seekAnimationFrame() {
+  seekFrameId = 0;
+  updateSeekVisual();
+  if (!audio.paused && !!state.playing) seekFrameId = requestAnimationFrame(seekAnimationFrame);
+}
+function startSeekAnimation() {
+  seekDisplayTime = audio.currentTime || 0;
+  seekLastFrameAt = performance.now();
+  if (!seekFrameId) seekFrameId = requestAnimationFrame(seekAnimationFrame);
+}
+function stopSeekAnimation() {
+  if (seekFrameId) cancelAnimationFrame(seekFrameId);
+  seekFrameId = 0;
+  updateSeekVisual(true);
+}
 function updateSeekHover(event) {
   const duration = audio.duration || 0;
   if (!duration) { seekTip.classList.remove('show'); return; }
@@ -1755,14 +1795,18 @@ seekProgress.addEventListener('pointerleave', () => {
   if (d > 0) seekInput.style.setProperty('--hover', ((audio.currentTime / d) * 100).toFixed(2) + '%');
 });
 seekProgress.addEventListener('pointerdown', () => {
+  seekScrubbing = true;
   seekProgress.classList.add('is-scrubbing');
   seekHovering = true;
 });
 window.addEventListener('pointerup', () => {
+  seekScrubbing = false;
   seekProgress.classList.remove('is-scrubbing');
   seekHovering = false;
+  seekDisplayTime = audio.currentTime || 0;
   const d = audio.duration || 0;
   if (d > 0) seekInput.style.setProperty('--hover', ((audio.currentTime / d) * 100).toFixed(2) + '%');
+  updateSeekVisual(true);
 });
 $('#volume').addEventListener('input', (e) => { audio.volume = Number(e.target.value) / 100; audio.muted = false; updateMute(); savePlayerPrefs(); });
 function updateMute() {

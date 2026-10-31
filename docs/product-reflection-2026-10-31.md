@@ -165,3 +165,10 @@
 - 时间气泡虽然设了 `pointer-events:none`，但固定在进度条上方且命中区域只有 4px，用户仍会觉得拖不动。
 - 已把气泡定位到轨道下方 `rect.bottom + 6`，明确 `pointer-events:none !important`，并把 range 实际命中高度提升到 14px，视觉轨道仍保持 4–6px。
 - 这类“看得见但点不到”的问题必须用真实拖拽验证，截图不算完成。
+
+## 追加（进度条一格一格）
+
+- 进度点卡顿的根因是只在 `timeupdate`（约 4Hz）和媒体事件时更新 range，属于离散跳变。
+- 已改为 `requestAnimationFrame` 60fps 显示循环，用锚点时间推进并按目标时间做小幅修正；range 使用 `step="any"`。
+- 命中高度 14px，时间气泡 `pointer-events:none` 并固定到轨道下方。
+- 用 CDP 实际播放采样并模拟从 25% 拖到 70%，实际进度到 70.2%，拖动链路验证通过。

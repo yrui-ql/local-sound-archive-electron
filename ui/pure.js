@@ -39,5 +39,17 @@
     return { previous, history: list }
   }
 
-  return { clampUiScale, filterSearchEntries, pushHistory, popHistory }
+  function smoothSeekTime(display, target, elapsed = 0, playbackRate = 1) {
+    let next = Number(display) || 0
+    if (!Number.isFinite(Number(target))) return next
+    const actual = Number(target)
+    if (elapsed > 0) next += Math.min(0.1, elapsed) * (Number(playbackRate) || 1)
+    const drift = actual - next
+    if (Math.abs(drift) > 2) next = actual
+    else next += drift * 0.2
+    return next
+  }
+
+  return { clampUiScale, filterSearchEntries, pushHistory, popHistory, smoothSeekTime }
 })
+

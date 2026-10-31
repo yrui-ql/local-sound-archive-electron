@@ -2729,7 +2729,6 @@ html[data-theme="green"] {
 @media (prefers-reduced-motion: reduce) {
   #btnDetectAgents.is-loading .icon, .agent-loading i { animation: none; }
 }
-\n.col-source { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n
 
 /* FIX: the time bubble must never sit on the seek hit target. */
 .player-progress { height: 14px; }
@@ -2746,3 +2745,6 @@ html[data-theme="green"] {
 }
 .seek-hover-tip,
 .seek-hover-tip.show { pointer-events: none !important; }
+
+.col-source { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-progress input[type="range"] { height: 14px !important; min-height: 14px; }

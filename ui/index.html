@@ -14,7 +14,7 @@ try {
   }
 } catch (error) {}
 </script>
-<link rel="stylesheet" href="app.css?v=20261031-62">
+<link rel="stylesheet" href="app.css?v=20261031-65">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -401,7 +401,7 @@ try {
   </main>
 
   <footer class="player" aria-label="播放器">
-    <div class="player-progress" id="playerProgress"><input id="seek" type="range" min="0" max="1000" value="0" aria-label="播放进度"><span class="seek-hover-tip" id="seekHoverTip" aria-hidden="true">0:00</span></div>
+    <div class="player-progress" id="playerProgress"><input id="seek" type="range" min="0" max="1000" step="any" value="0" aria-label="播放进度"><span class="seek-hover-tip" id="seekHoverTip" aria-hidden="true">0:00</span></div>
     <div class="player-now">
       <div class="player-art art" id="playerArt" data-initial="♪" role="button" tabindex="0" aria-label="查看歌词" title="查看歌词"><span class="art-initial">♪</span></div>
       <div class="player-meta"><div class="player-title" id="playerTitle">未在播放</div><div class="player-artist" id="playerArtist">从音乐库选一首歌</div></div>
@@ -564,11 +564,14 @@ try {
 </div>
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=9"></script>
-<script src="pure.js?v=2"></script>
-<script src="app.js?v=20261031-51"></script>
+<script src="pure.js?v=3"></script>
+<script src="app.js?v=20261031-54"></script>
 <script src="custom-select.js?v=1"></script>
 </body>
 </html>
+
+
+
 
 
 
