@@ -2748,3 +2748,11 @@ html[data-theme="green"] {
 
 .col-source { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .player-progress input[type="range"] { height: 14px !important; min-height: 14px; }
+
+/* The seek rail is the footer's top edge. Do not draw an extra accent line under it. */
+.player-progress input[type="range"],
+.player-progress:hover input[type="range"],
+.player-progress.is-scrubbing input[type="range"],
+.player-progress input[type="range"]:focus-visible {
+  box-shadow: none !important;
+}
