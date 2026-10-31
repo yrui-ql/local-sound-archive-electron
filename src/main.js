@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session } = require('electron')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const http = require('node:http')
@@ -58,6 +58,15 @@ async function loadConfig() {
   try {
     if (fs.existsSync(CONFIG_PATH)) config = JSON.parse((await fsp.readFile(CONFIG_PATH, 'utf8')).replace(/^\uFEFF/, ''))
   } catch { config = {} }
+  const legacyConfigPath = path.join(DATA_DIR, 'client-config.json')
+  if ((!Array.isArray(config.musicDirs) || !config.musicDirs.length) && fs.existsSync(legacyConfigPath)) {
+    try {
+      const legacy = JSON.parse((await fsp.readFile(legacyConfigPath, 'utf8')).replace(/^\uFEFF/, ''))
+      const dirs = Array.isArray(legacy.sourceDirs) ? legacy.sourceDirs.slice() : []
+      if (legacy.libraryRoot) dirs.unshift(path.join(legacy.libraryRoot, legacy.musicSubdir || '音乐'))
+      if (dirs.length) config.musicDirs = dirs
+    } catch { }
+  }
   const envDirs = process.env.LSA_MUSIC_DIR
     ? process.env.LSA_MUSIC_DIR.split(path.delimiter)
     : null

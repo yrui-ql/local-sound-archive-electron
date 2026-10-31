@@ -30,12 +30,19 @@ for (const name of ['qrcode', 'dijkstrajs', 'pngjs']) {
 const exe = path.join(out, 'electron.exe')
 if (!fs.existsSync(exe)) throw new Error('electron.exe missing')
 const targetExe = path.join(out, 'LSA.exe')
-fs.renameSync(exe, targetExe)
+const electronExe = path.join(out, 'LSA-electron.exe')
+fs.renameSync(exe, electronExe)
+const launcher = path.join(root, 'scripts', 'LsaLauncher.cs')
+const csc = process.env.CSC_PATH || (process.env.WINDIR ? path.join(process.env.WINDIR, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe') : 'csc.exe')
+if (!fs.existsSync(csc)) throw new Error('csc.exe not found; cannot build portable launcher')
+execFileSync(csc, ['/nologo', '/target:winexe', '/out:' + targetExe, launcher], { stdio: 'ignore' })
 const rcedit = path.join(root, 'node_modules', 'electron-winstaller', 'vendor', 'rcedit.exe')
 const ico = path.join(root, 'build', 'icon.ico')
 if (fs.existsSync(rcedit) && fs.existsSync(ico)) {
   execFileSync(rcedit, [targetExe, '--set-icon', ico], { stdio: 'ignore' })
+  execFileSync(rcedit, [electronExe, '--set-icon', ico], { stdio: 'ignore' })
 }
 console.log('portable build:', targetExe)
+
 
 
