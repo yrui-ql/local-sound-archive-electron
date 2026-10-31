@@ -139,10 +139,7 @@ const UI_SCALE_MIN = 0.85;
 const UI_SCALE_MAX = 1.5;
 let currentUiScale = 1;
 function clampUiScale(value) {
-  let scale = Number(value);
-  if (!Number.isFinite(scale)) scale = 1;
-  scale = Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, scale));
-  return Math.round(scale * 100) / 100;
+  return window.LSAPure ? window.LSAPure.clampUiScale(value, UI_SCALE_MIN, UI_SCALE_MAX) : Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, Number(value) || 1));
 }
 function readUiScale() {
   try {
@@ -1280,10 +1277,9 @@ function ensureQueue(track, list) {
 }
 function rememberPlayedTrack(track) {
   if (!track || !track.url) return;
-  const last = state.playHistory[state.playHistory.length - 1];
-  if (last && last.url === track.url) return;
-  state.playHistory.push(track);
-  if (state.playHistory.length > 200) state.playHistory.shift();
+  state.playHistory = window.LSAPure
+    ? window.LSAPure.pushHistory(state.playHistory, track)
+    : [...state.playHistory, track].slice(-200);
 }
 function playTrack(track, list, options = {}) {
   if (!track) return;
@@ -1330,8 +1326,11 @@ function nextTrack(auto = false) {
   playTrack(state.playQueue[i], state.playQueue);
 }
 function prevTrack() {
-  let previous = state.playHistory.pop();
-  while (previous && state.playing && previous.url === state.playing.url) previous = state.playHistory.pop();
+  const result = window.LSAPure
+    ? window.LSAPure.popHistory(state.playHistory, state.playing && state.playing.url)
+    : { previous: state.playHistory.pop() || null, history: state.playHistory };
+  state.playHistory = result.history;
+  const previous = result.previous;
   if (previous) { playTrack(previous, state.playQueue, { fromHistory: true }); return; }
   if (state.playing) {
     audio.currentTime = 0;
@@ -2121,6 +2120,7 @@ async function doSearch() {
   }
 }
 function visibleSearchEntries() {
+  if (window.LSAPure) return window.LSAPure.filterSearchEntries(state.search, state.searchSource);
   return state.search
     .map((song, index) => ({ song, index }))
     .filter(({ song }) => state.searchSource === 'all' || song.source === state.searchSource);

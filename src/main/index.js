@@ -9,7 +9,7 @@ const { LibraryStore } = require('./services/library')
 const { ExtensionStore } = require('./services/extensions')
 const { ExtensionHost } = require('./services/extension-host')
 const { ExtensionScheduler } = require('./services/extension-scheduler')
-const { cleanTitleText, cleanDisplayTitle, safeFileName } = require('./services/files')
+const { cleanTitleText, cleanDisplayTitle, safeFileName, isPathInside } = require('./services/files')
 const { buildSourceRegistry } = require('./services/sources')
 const { LikesStore } = require('./services/likes')
 const { AccountService } = require('./services/account')
@@ -682,11 +682,7 @@ async function deleteRecording(args) {
 
 async function deleteTrack(args) {
   const target = path.resolve(String(args?.path || ''))
-  const allowed = musicDirs.some((root) => {
-    const resolvedRoot = path.resolve(root)
-    return target === resolvedRoot || target.startsWith(resolvedRoot + path.sep)
-  })
-  if (!allowed) return { ok: false, error: '只能删除音乐库目录内的文件' }
+  if (!isPathInside(target, musicDirs)) return { ok: false, error: '只能删除音乐库目录内的文件' }
   if (!AUDIO_EXTENSIONS.has(path.extname(target).toLowerCase())) return { ok: false, error: '不是支持的音频文件' }
   if (!fs.existsSync(target)) return { ok: false, error: '文件不存在或已经移动' }
   try {
@@ -1241,4 +1237,5 @@ async function getSources() {
   const data = await extensionStore.list()
   return { sources: buildSourceRegistry(data.extensions) }
 }
+
 
