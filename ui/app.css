@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #080a0d;
   --bg-2: #0c0f14;
   --surface: #11161d;
@@ -2401,32 +2401,32 @@ summary:focus-visible { outline: 2px solid var(--ui-accent, var(--accent)); outl
 }
 
 /* Scrollbars are transient: no permanent rails in panels, modals or lists. */
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main) {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main) {
   scrollbar-width: none;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main)::-webkit-scrollbar {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main)::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main).is-scrolling {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main).is-scrolling {
   scrollbar-width: thin;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main).is-scrolling::-webkit-scrollbar {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main).is-scrolling::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main).is-scrolling::-webkit-scrollbar-thumb {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main).is-scrolling::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--ui-muted, var(--muted)) 48%, transparent);
   border-radius: 99px;
 }
 
 /* Native scroll rails are never shown. A slim indicator appears only while scrolling. */
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main)::-webkit-scrollbar {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main)::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main) {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .recent-list, .search-results, .settings-main) {
   scrollbar-width: none !important;
   -ms-overflow-style: none;
 }
@@ -2538,3 +2538,39 @@ summary:focus-visible { outline: 2px solid var(--ui-accent, var(--accent)); outl
   padding-top: 4px;
 }
 
+
+/* Recent: the same page shell as the library — fixed header, one scrolling list. */
+#page-recent.active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+#page-recent .page-head,
+#page-recent .panel-head {
+  flex: none;
+}
+#page-recent .recent-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+#page-recent .recent-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+
+/* Page shell for every page: the page fills main; only its body scrolls. */
+.main { display: flex; flex-direction: column; }
+.page.active { flex: 1; min-height: 0; overflow-y: auto; }
+#page-library.active, #page-recent.active { overflow: hidden; }
+#page-recent.active { height: auto; flex: 1; }
+#page-library.active { height: auto; flex: 1; }
+
+/* The player owns its own grid row; keep only breathing room above it. */
+.main { padding-bottom: 18px; }

@@ -476,6 +476,8 @@ function showPage(name) {
   if (main) main.scrollTop = 0;
   const libList = $('#libList');
   if (libList) libList.scrollTop = 0;
+  const recentList = $('#recentList');
+  if (recentList) recentList.scrollTop = 0;
   closeInfo();
   if (name === 'search') setTimeout(() => $('#searchInput').focus(), 40);
   if (name === 'record') loadRecordings();
@@ -3004,6 +3006,7 @@ document.addEventListener('keydown', (e) => {
   setInterval(async () => { await pollRecord(); renderRecord(); }, 1000);
   renderRecord();
 })();
+
 
 
 
