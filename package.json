@@ -63,5 +63,8 @@
     "electron-builder": "^26.0.0",
     "png-to-ico": "^3.0.2"
   },
-  "author": "LSA contributors"
+  "author": "LSA contributors",
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
 }

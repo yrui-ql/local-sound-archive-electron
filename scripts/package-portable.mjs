@@ -22,6 +22,11 @@ for (const name of ['src', 'ui', 'ai-control', 'extension-sdk', 'scripts', 'buil
   fs.cpSync(path.join(root, name), path.join(app, name), { recursive: true })
 }
 fs.copyFileSync(path.join(root, 'package.json'), path.join(app, 'package.json'))
+const appModules = path.join(app, 'node_modules')
+for (const name of ['qrcode', 'dijkstrajs', 'pngjs']) {
+  const source = path.join(root, 'node_modules', name)
+  if (fs.existsSync(source)) fs.cpSync(source, path.join(appModules, name), { recursive: true })
+}
 const exe = path.join(out, 'electron.exe')
 if (!fs.existsSync(exe)) throw new Error('electron.exe missing')
 const targetExe = path.join(out, 'LSA.exe')
@@ -32,4 +37,5 @@ if (fs.existsSync(rcedit) && fs.existsSync(ico)) {
   execFileSync(rcedit, [targetExe, '--set-icon', ico], { stdio: 'ignore' })
 }
 console.log('portable build:', targetExe)
+
 

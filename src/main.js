@@ -8,6 +8,7 @@ const { LibraryStore } = require('./library')
 const { ExtensionStore } = require('./extensions')
 const { ExtensionHost } = require('./extension-host')
 const { LikesStore } = require('./likes')
+const { AccountService } = require('./account')
 
 const isMac = process.platform === 'darwin'
 app.setAppUserModelId('com.local-sound-archive.app')
@@ -44,6 +45,7 @@ let libraryStore = null
 let extensionStore = null
 let extensionHost = null
 let likesStore = null
+let accountService = null
 
 async function loadConfig() {
   await fsp.mkdir(DATA_DIR, { recursive: true }).catch(() => {})
@@ -51,6 +53,7 @@ async function loadConfig() {
   if (!extensionStore) extensionStore = new ExtensionStore(path.join(DATA_DIR, 'extensions'), path.join(APP_ROOT, 'extension-sdk', 'sample-source'))
   if (!extensionHost) extensionHost = new ExtensionHost(extensionStore)
   if (!likesStore) likesStore = new LikesStore(DATA_DIR, BACKEND_URL)
+  if (!accountService) accountService = new AccountService(DATA_DIR, BACKEND_URL)
   try {
     if (fs.existsSync(CONFIG_PATH)) config = JSON.parse((await fsp.readFile(CONFIG_PATH, 'utf8')).replace(/^\uFEFF/, ''))
   } catch { config = {} }
@@ -544,6 +547,10 @@ async function handleCommand(cmd, args) {
       const result = await buildLibrary()
       return { ok: true, summary: { tracks: result.tracks.length, formats: result.formats, totalBytes: result.totalBytes } }
     }
+    case 'qrStart':
+      return accountService.qrStart(String(args?.source || ''))
+    case 'qrPoll':
+      return accountService.qrPoll(String(args?.source || ''), String(args?.key || ''))
     case 'clearFailed':
       return { ok: false, error: 'Electron 端暂未接入失败任务清理' }
     case 'getAiControlStatus':
@@ -657,14 +664,35 @@ async function createWindow() {
       try {
         const result = await mainWindow.webContents.executeJavaScript(`(async () => {
           await new Promise((resolve) => setTimeout(resolve, 1200));
+          const call = window.call;
+          const safe = async (cmd, args = {}) => {
+            try { return await call(cmd, args); } catch (error) { return { ok: false, error: error.message }; }
+          };
+          const agents = await safe('getAgents');
+          const likes = await safe('getLikes');
+          const extensions = await safe('getExtensions');
+          const maintain = await safe('maintain');
+          const theme = await safe('setTheme', { dark: true });
+          if (typeof window.showPage === 'function') window.showPage('settings');
+          await new Promise((resolve) => setTimeout(resolve, 350));
           return {
             library: document.querySelectorAll('#libList .row').length,
             audio: !!document.querySelector('#audio'),
             aiBridge: typeof window.handleAiCommand === 'function',
             windowControls: !!document.querySelector('#windowControls'),
+            agents: Array.isArray(agents.agents) ? agents.agents.length : -1,
+            likesConfig: !!(likes && likes.config),
+            extensions: Array.isArray(extensions.extensions) ? extensions.extensions.length : -1,
+            maintainOk: !!(maintain && maintain.ok),
+            themeOk: !!(theme && theme.ok),
+            settingsPage: !!document.querySelector('#page-settings.active'),
           };
         })()`, true);
-        const report = { ok: result.library >= 0 && result.audio && result.aiBridge, ...result, dataDir: DATA_DIR, musicDirs };
+        const report = {
+          ok: result.library >= 0 && result.audio && result.aiBridge && result.agents >= 0 &&
+              result.likesConfig && result.extensions >= 0 && result.maintainOk && result.themeOk && result.settingsPage,
+          ...result, dataDir: DATA_DIR, musicDirs,
+        };
         fs.writeFileSync(path.join(DATA_DIR, 'smoke.json'), JSON.stringify(report, null, 2));
         console.log('LSA_SMOKE ' + JSON.stringify(report));
       } catch (error) {
@@ -722,6 +750,7 @@ app.on('before-quit', () => {
     try { audioServer.close() } catch { }
   }
 })
+
 
 
 
