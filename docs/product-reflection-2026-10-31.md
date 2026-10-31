@@ -81,3 +81,11 @@
 - [UX states](https://github.com/ryan-mahoney/ryan-llm-skills/blob/main/rules/ux-states.md)
 - [Definition of Done](https://www.productboard.com/product-management-prompts-library/definition-of-done-checklist/)
 - [User journey / edge cases](https://skillsmp.com/ko/creators/gulati8/justice-league-factory/claude-skills-product-thinking)
+
+## 追加教训（滚动、标题与原生控件）
+
+- 文件名里的 `01_` 是音轨号，不是歌名；显示层必须剥离，不能把原始文件名直接当产品标题。
+- 隐藏原生滚动条不是完成；必须提供 hover 可见、可拖拽的 overlay，以及 PageUp/PageDown、Home/End 等快速滚动方式。
+- 原生 `<select>` 的弹层由系统绘制，无法主题化；必须用自绘 listbox，并保留键盘、aria 和程序化 value 同步。
+- 页面布局不是单页修补：列表页统一采用固定头部 + flex 撑满 + 单一滚动列表；进入页面重置滚动位置。
+- 每修一个组件都要在真实窗口截图/操作验证，不能只看代码和构建成功。
