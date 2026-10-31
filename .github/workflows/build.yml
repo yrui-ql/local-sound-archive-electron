@@ -1,4 +1,4 @@
-﻿name: build
+name: build
 
 on:
   push:
@@ -17,12 +17,6 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm run package:mac
-      - uses: actions/upload-artifact@v4
-        with:
-          name: LSA-macos-unsigned
-          path: |
-            release/*.dmg
-            release/*.zip
 
   windows-portable:
     runs-on: windows-latest
@@ -33,7 +27,3 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm run package:portable
-      - uses: actions/upload-artifact@v4
-        with:
-          name: LSA-windows-portable
-          path: release/LSA-portable
