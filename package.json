@@ -1,0 +1,62 @@
+{
+  "name": "local-sound-archive",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Local-first music archive and player for Windows and macOS",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "package:win": "node scripts/package-portable.mjs",
+    "package:mac": "electron-builder --mac dmg zip --x64 --arm64",
+    "package:portable": "node scripts/package-portable.mjs"
+  },
+  "build": {
+    "appId": "com.local-sound-archive.app",
+    "productName": "LSA",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "ui/**/*",
+      "ai-control/**/*",
+      "extension-sdk/**/*",
+      "scripts/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "src/main.js"
+    },
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "artifactName": "LSA-${version}-win.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.music",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "identity": null,
+      "notarize": false
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Audio"
+    }
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "author": "LSA contributors"
+}
