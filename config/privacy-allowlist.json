@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "files": [
+    {
+      "sha256": "6E98C71094AFDFC63A2AC91A8DF3FA65A932660FA850FD0A12771575DB83A316",
+      "name": "LSA-electron.exe",
+      "reason": "Pinned official Electron 38.8.6 runtime. Upstream binary contains test-only fixture paths and test key-shaped strings that are not user data. The final executable is icon-patched and hash-pinned here; all project-authored resources are audited normally."
+    }
+  ]
+}
