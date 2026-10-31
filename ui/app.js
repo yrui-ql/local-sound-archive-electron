@@ -2698,7 +2698,14 @@ function fmtDate(iso) {
 }
 async function loadLikes() {
   try {
-    const data = await call('getLikes');
+    const [data, extData] = await Promise.all([
+      call('getLikes'),
+      call('getExtensions').catch(() => null),
+    ]);
+    if (extData) {
+      state.extensions = extData.extensions || [];
+      state.extensionSafeMode = !!extData.safeMode;
+    }
     state.likes = data;
     renderLikes();
   } catch (err) {
@@ -2745,7 +2752,13 @@ function renderLikes() {
   badge.classList.toggle('hidden', !newCount);
 }
 function renderLikeSources(sources, cookies) {
-  $('#likesSources').innerHTML = sources.map((s) => {
+  const hidden = new Set();
+  for (const ext of state.extensions || []) {
+    if (state.extensionSafeMode || !ext.enabled) {
+      for (const source of ext.sources || []) hidden.add(source.id);
+    }
+  }
+  $('#likesSources').innerHTML = sources.filter((s) => !hidden.has(s.id)).map((s) => {
     const connected = !!s.connected;
     const detail = connected
       ? (s.likedTotal ? '喜欢 ' + s.likedTotal + ' 首 · ' + (s.lastSync ? '上次 ' + fmtDate(s.lastSync) : '尚未同步') + (!s.backfilled ? ' · 历史待补齐' : '') : '已登录 · 待首次同步')
@@ -3194,18 +3207,35 @@ function renderExtensions() {
     const caps = Array.isArray(ext.capabilities) ? ext.capabilities : [];
     const sources = Array.isArray(ext.sources) ? ext.sources : [];
     const jobs = Array.isArray(ext.jobs) ? ext.jobs : [];
-    return '<div class="extension-item" data-ext-id="' + esc(ext.id) + '">' +
+    return '<div class="extension-item' + (active ? '' : ' is-disabled') + '" data-ext-id="' + esc(ext.id) + '">' +
       '<div class="extension-main"><div class="extension-title"><strong>' + esc(ext.name || ext.id) + '</strong><span class="badge' + (active ? ' accent' : '') + '">' + badge + '</span><span class="badge">' + esc(ext.kind || 'source') + '</span></div>' +
       '<small>' + esc(ext.id) + ' · v' + esc(ext.activeVersion || ext.version || '—') + (ext.canRollback ? ' · 可回退到 v' + esc(ext.lastGood) : '') + (ext.permissions && ext.permissions.length ? ' · 权限：' + esc(ext.permissions.join(', ')) : '') + '</small>' +
       '<p>' + esc(ext.description || '本地 JSON-RPC 扩展') + '</p>' +
       (caps.length ? '<p class="extension-capabilities">能力：' + esc(caps.join(' · ')) + (sources.length ? ' · 来源：' + esc(sources.map((source) => source.name || source.id).join('、')) : '') + (jobs.length ? ' · 定时任务：' + esc(jobs.map((job) => job.title || job.id).join('、')) : '') + '</p>' : '') +
       '</div>' +
       '<div class="extension-actions">' +
-      '<button class="btn ghost small" data-ext-action="' + (active ? 'disable' : 'enable') + '">' + (active ? '禁用' : '启用') + '</button>' +
+      '<label class="extension-switch" title="' + (safe ? '安全模式已关闭扩展' : active ? '点击禁用扩展' : '点击启用扩展') + '"><input type="checkbox" data-ext-toggle="' + esc(ext.id) + '"' + (active ? ' checked' : '') + (safe ? ' disabled' : '') + '><i class="switch" aria-hidden="true"></i><span>' + (active ? '已启用' : '已禁用') + '</span></label>' +
       (ext.canRollback ? '<button class="btn ghost small" data-ext-action="rollback">回退</button>' : '') +
       '<button class="btn ghost small" data-ext-action="remove">移除</button>' +
       '</div></div>';
   }).join('');
+  list.querySelectorAll('[data-ext-toggle]').forEach((input) => {
+    input.addEventListener('change', async () => {
+      const id = input.dataset.extToggle;
+      const action = input.checked ? 'enable' : 'disable';
+      input.disabled = true;
+      const res = await call('extensionAction', { id, action }).catch(() => null);
+      if (res && res.ok) {
+        toast(action === 'enable' ? '扩展已启用' : '扩展已禁用', 'ok');
+        await loadExtensions();
+        await loadLikes();
+      } else {
+        input.checked = !input.checked;
+        input.disabled = false;
+        toast((res && res.error) || '扩展操作失败', 'err');
+      }
+    });
+  });
   list.querySelectorAll('[data-ext-action]').forEach((button) => {
     button.addEventListener('click', async () => {
       const item = button.closest('[data-ext-id]');
@@ -3216,7 +3246,7 @@ function renderExtensions() {
         if (!ok) return;
       }
       const res = await call('extensionAction', { id: item.dataset.extId, action }).catch(() => null);
-      if (res && res.ok) { toast('扩展已' + (action === 'enable' ? '启用' : action === 'disable' ? '禁用' : action === 'rollback' ? '回退' : '更新'), 'ok'); loadExtensions(); }
+      if (res && res.ok) { toast('扩展已' + (action === 'rollback' ? '回退' : '更新'), 'ok'); await loadExtensions(); await loadLikes(); }
       else toast((res && res.error) || '扩展操作失败', 'err');
     });
   });
