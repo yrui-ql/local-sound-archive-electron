@@ -76,6 +76,10 @@ CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:mac
 
 macOS 构建使用 `build/entitlements.mac.plist` 的 hardened runtime 配置；正式签名/公证需要自备 Apple Developer 凭据，不随仓库提供。
 
+## 发布审计
+
+项目源码、配置、README 和 wrapper 启动器必须通过 `privacy-audit`。官方 Electron 运行时是第三方二进制，不能因为它自带的上游测试常量就把用户数据问题和它混为一谈；它的 SHA256 固定在 `config/privacy-allowlist.json`，只有哈希完全匹配时才跳过该 vendor 文件，项目自有的所有资源仍然正常扫描。
+
 ## 在线服务
 
 搜索、扫码登录和下载依赖本机运行的 `go-music-dl` 服务，默认监听 `127.0.0.1:18088`。应用不会内置这个服务；请单独启动并配置管理员凭据。
