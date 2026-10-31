@@ -4,7 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>留声 · LSA</title>
-<link rel="stylesheet" href="app.css?v=20261031-53">
+<script>
+try {
+  var scaleFromMain = Number(new URLSearchParams(location.search).get('uiScale'));
+  var savedScale = Number(localStorage.getItem('musicArchiveUiScaleV3'));
+  var bootScale = Number.isFinite(scaleFromMain) && scaleFromMain >= 0.85 && scaleFromMain <= 1.5 ? scaleFromMain : savedScale;
+  if (Number.isFinite(bootScale) && bootScale >= 0.85 && bootScale <= 1.5) {
+    document.documentElement.style.setProperty('--text-boost', String(bootScale));
+  }
+} catch (error) {}
+</script>
+<link rel="stylesheet" href="app.css?v=20261031-55">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -299,12 +309,12 @@
           <section class="panel">
             <div class="panel-head"><div><h2>外观</h2></div><span id="themeState" class="badge">黑胶</span></div>
             <div class="ui-scale-row">
-              <div class="ui-scale-copy"><strong>界面比例</strong></div>
+              <div class="ui-scale-copy"><strong>界面比例</strong><small id="uiScaleHint">修改后重启留声生效</small></div>
               <div class="ui-scale-slider">
                 <input id="uiScaleRange" type="range" min="85" max="150" step="5" value="100" aria-label="界面比例">
                 <output id="uiScaleValue" for="uiScaleRange">100%</output>
                 <button id="btnUiScaleReset" type="button" class="btn ghost small">重置</button>
-                <button class="info-btn" data-tip="调整文字、行高和控件的整体显示比例；只影响本机显示。" aria-label="界面比例说明"><svg class="icon"><use href="#i-info"/></svg></button>
+                <button class="info-btn" data-tip="调整文字、行高和控件的整体显示比例；修改后重启留声生效。" aria-label="界面比例说明"><svg class="icon"><use href="#i-info"/></svg></button>
               </div>
             </div>
             <div class="ui-scale-row">
@@ -553,10 +563,13 @@
 </div>
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=9"></script>
-<script src="app.js?v=20261031-41"></script>
+<script src="app.js?v=20261031-43"></script>
 <script src="custom-select.js?v=1"></script>
 </body>
 </html>
+
+
+
 
 
 

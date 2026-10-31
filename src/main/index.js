@@ -72,6 +72,10 @@ async function loadConfig() {
     if (fs.existsSync(CONFIG_PATH)) config = JSON.parse((await fsp.readFile(CONFIG_PATH, 'utf8')).replace(/^\uFEFF/, ''))
   } catch { config = {} }
   config = { ...defaults, ...config }
+  const configuredUiScale = Number(config.uiScale)
+  config.uiScale = Number.isFinite(configuredUiScale) && configuredUiScale >= 0.85 && configuredUiScale <= 1.5
+    ? Math.round(configuredUiScale * 100) / 100
+    : 1
   const legacyConfigPath = path.join(DATA_DIR, 'client-config.json')
   if ((!Array.isArray(config.musicDirs) || !config.musicDirs.length) && fs.existsSync(legacyConfigPath)) {
     try {
@@ -948,8 +952,15 @@ async function handleCommand(cmd, args) {
       return { ok: false, error: '没有找到本地歌词' }
     }
     case 'setTheme':
-    case 'setUiScale':
       return { ok: true }
+    case 'setUiScale': {
+      const requested = Number(args?.scale)
+      if (!Number.isFinite(requested)) return { ok: false, error: '无效的界面比例' }
+      const scale = Math.round(Math.max(0.85, Math.min(1.5, requested)) * 100) / 100
+      config.uiScale = scale
+      await saveConfig()
+      return { ok: true, scale }
+    }
     case 'copyText':
       require('electron').clipboard.writeText(String(args?.text || ''))
       return { ok: true }
@@ -1012,7 +1023,7 @@ async function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null })
 
   mainWindow.once('ready-to-show', () => { logStart('ready-to-show'); mainWindow.show() })
-  try { await mainWindow.loadFile(path.join(RENDERER, 'index.html')); logStart('loadFile:ok') } catch (error) { logStart('loadFile:error ' + error.stack) ; throw error }
+  try { await mainWindow.loadFile(path.join(RENDERER, 'index.html'), { query: { uiScale: String(config.uiScale || 1) } }); logStart('loadFile:ok') } catch (error) { logStart('loadFile:error ' + error.stack) ; throw error }
   if (process.env.LSA_SMOKE) {
     setTimeout(async () => {
       try {

@@ -133,58 +133,58 @@ function initTheme() {
 
 /* ---------- interface scale ---------- */
 const UI_SCALE_KEY = 'musicArchiveUiScaleV3';
-const UI_SCALE_MIN = 0.9;
+const UI_SCALE_MIN = 0.85;
 const UI_SCALE_MAX = 1.5;
 let currentUiScale = 1;
-let uiScaleFrame = 0;
-let pendingUiScale = null;
-function applyUiScaleRequest(scale) {
-  pendingUiScale = scale;
-  if (uiScaleFrame) return;
-  uiScaleFrame = requestAnimationFrame(() => {
-    uiScaleFrame = 0;
-    const value = pendingUiScale;
-    pendingUiScale = null;
-    if (value === null) return;
-    call('setUiScale', { scale: value }).catch(() => {});
-  });
-}
-function previewUiScale(value) {
+function clampUiScale(value) {
   let scale = Number(value);
   if (!Number.isFinite(scale)) scale = 1;
   scale = Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, scale));
-  scale = Math.round(scale * 100) / 100;
-  currentUiScale = scale;
-  $('#uiScaleValue').textContent = Math.round(scale * 100) + '%';
-  applyUiScaleRequest(scale);
+  return Math.round(scale * 100) / 100;
 }
-function applyUiScale(value, persist = true) {
-  let scale = Number(value);
-  if (!Number.isFinite(scale)) scale = 1;
-  scale = Math.max(UI_SCALE_MIN, Math.min(UI_SCALE_MAX, scale));
-  scale = Math.round(scale * 100) / 100;
-  currentUiScale = scale;
-  const percent = Math.round(scale * 100);
+function readUiScale() {
+  try {
+    const fromMain = Number(new URLSearchParams(location.search).get('uiScale'));
+    if (Number.isFinite(fromMain) && fromMain >= UI_SCALE_MIN && fromMain <= UI_SCALE_MAX) return clampUiScale(fromMain);
+    const raw = Number(localStorage.getItem(UI_SCALE_KEY));
+    if (Number.isFinite(raw) && raw >= UI_SCALE_MIN && raw <= UI_SCALE_MAX) return clampUiScale(raw);
+  } catch { }
+  return 1;
+}
+function writeUiScale(scale) {
+  try { localStorage.setItem(UI_SCALE_KEY, String(scale)); } catch { }
+}
+function renderUiScale(scale) {
+  currentUiScale = clampUiScale(scale);
+  const percent = Math.round(currentUiScale * 100);
   $('#uiScaleRange').value = String(percent);
   $('#uiScaleValue').textContent = percent + '%';
-  if (persist) { try { localStorage.setItem(UI_SCALE_KEY, String(scale)); } catch { } }
-  applyUiScaleRequest(scale);
+}
+function previewUiScale(value) {
+  const scale = clampUiScale(value);
+  $('#uiScaleValue').textContent = Math.round(scale * 100) + '%';
+  $('#uiScaleHint').textContent = '松手保存 · 下次启动生效';
+}
+function commitUiScale(value, quiet = false) {
+  const scale = clampUiScale(value);
+  writeUiScale(scale);
+  call('setUiScale', { scale }).catch(() => {});
+  renderUiScale(scale);
+  $('#uiScaleHint').textContent = '已设为 ' + Math.round(scale * 100) + '% · 重启留声后生效';
+  if (!quiet) toast('界面比例已设为 ' + Math.round(scale * 100) + '%，重启留声后生效', 'ok');
 }
 function stepUiScale(direction) {
-  applyUiScale(currentUiScale + direction * 0.05);
-  toast('界面比例 ' + Math.round(currentUiScale * 100) + '%', 'ok');
+  commitUiScale(currentUiScale + direction * 0.05);
 }
 function initUiScale() {
-  let stored = 1;
-  try {
-    const raw = Number(localStorage.getItem(UI_SCALE_KEY));
-    if (Number.isFinite(raw) && raw >= UI_SCALE_MIN && raw <= UI_SCALE_MAX) stored = raw;
-  } catch { }
-  applyUiScale(stored, false);
+  const stored = readUiScale();
+  currentUiScale = stored;
+  document.documentElement.style.setProperty('--text-boost', String(stored));
+  renderUiScale(stored);
   const range = $('#uiScaleRange');
   range.addEventListener('input', () => previewUiScale(Number(range.value) / 100));
-  range.addEventListener('change', () => applyUiScale(Number(range.value) / 100));
-  $('#btnUiScaleReset').addEventListener('click', () => { applyUiScale(1); toast('界面比例已重置', 'ok'); });
+  range.addEventListener('change', () => commitUiScale(Number(range.value) / 100, true));
+  $('#btnUiScaleReset').addEventListener('click', () => commitUiScale(1));
 }
 
 /* ---------- user-defined shortcuts ---------- */
@@ -3192,6 +3192,7 @@ document.addEventListener('keydown', (e) => {
   setInterval(async () => { await pollRecord(); renderRecord(); }, 1000);
   renderRecord();
 })();
+
 
 
 
