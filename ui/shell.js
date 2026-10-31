@@ -167,9 +167,12 @@ if (recordHost && recordHost.addEventListener) {
     if (!dragging) hideTimer = setTimeout(hide, 900)
   }, true)
 
-  document.addEventListener('pointerover', (event) => {
+  document.addEventListener('pointermove', (event) => {
+    if (dragging) return
     const target = event.target instanceof Element ? event.target.closest(selector) : null
-    if (target) showFor(target)
+    if (!target) return
+    const rect = target.getBoundingClientRect()
+    if (event.clientX >= rect.right - 12) showFor(target)
   }, { passive: true })
 
   document.addEventListener('pointerleave', (event) => {
@@ -220,5 +223,6 @@ if (recordHost && recordHost.addEventListener) {
     else hide()
   }, { passive: true })
 })()
+
 
 

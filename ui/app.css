@@ -2433,7 +2433,7 @@ summary:focus-visible { outline: 2px solid var(--ui-accent, var(--accent)); outl
 #lsa-scroll-thumb {
   position: fixed;
   right: 3px;
-  width: 5px;
+  width: 3px;
   min-height: 26px;
   border-radius: 99px;
   background: color-mix(in srgb, var(--ui-muted, var(--muted)) 48%, transparent);
@@ -2442,8 +2442,8 @@ summary:focus-visible { outline: 2px solid var(--ui-accent, var(--accent)); outl
   z-index: 999;
   transition: opacity .18s ease, width .14s ease;
 }
-#lsa-scroll-thumb.visible { opacity: .72; pointer-events: auto; cursor: grab; }
-#lsa-scroll-thumb.dragging { opacity: 1; width: 6px; cursor: grabbing; }
+#lsa-scroll-thumb.visible { opacity: .48; pointer-events: auto; cursor: grab; }
+#lsa-scroll-thumb.dragging { opacity: .9; width: 4px; cursor: grabbing; }
 
 /* Recording list: playable, deletable, incremental. */
 .record-list { display: flex; flex-direction: column; gap: 2px; min-height: 90px; }
@@ -2717,3 +2717,4 @@ select.native-select {
   overflow-y: auto;
 }
 #page-record .record-list .empty { flex: 1; min-height: 0; }
+
