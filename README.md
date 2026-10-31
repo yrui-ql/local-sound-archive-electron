@@ -1,4 +1,4 @@
-# LSA · 留声
+﻿# LSA · 留声
 
 **中文** | [English](#english)
 
@@ -20,7 +20,7 @@ LSA / 留声是一个本地优先的音乐归档与播放器。它扫描你的�
 
 | 模块 | 能力 |
 |---|---|
-| 本地音乐库 | 多目录扫描、SQLite 索引、格式筛选、搜索、分页加载 |
+| 本地音乐库 | 多目录扫描、SQLite 索引、下载来源记录、格式筛选、搜索、分页加载 |
 | 播放 | FLAC / MP3 / M4A / WAV / OGG，Range 音频服务，播放队列，定位当前播放 |
 | 歌词 | 本地 `.lrc` 加载与滚动高亮 |
 | 在线服务 | 本机 `go-music-dl` 代理搜索、下载队列与任务操作 |
@@ -149,7 +149,7 @@ The desktop app is built on Electron and reuses the existing HTML/CSS/JS rendere
 
 | Area | Capability |
 |---|---|
-| Library | multi-folder scan, SQLite index, format filters, search, incremental loading |
+| Library | multi-folder scan, SQLite index, download source provenance, format filters, search, incremental loading |
 | Playback | FLAC / MP3 / M4A / WAV / OGG, Range audio server, play queue, locate current track |
 | Lyrics | local `.lrc` loading and scroll highlighting |
 | Online | local `go-music-dl` proxy for search, download queue and task actions |
@@ -263,6 +263,7 @@ Source, configuration, README and the launcher must pass `privacy-audit`. The of
 ### License
 
 MIT
+
 
 
 

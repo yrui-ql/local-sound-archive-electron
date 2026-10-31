@@ -667,6 +667,7 @@ function renderLibrary() {
       return '<div class="row lib-grid' + (playing ? ' playing' : '') + (playing && state.isPlaying ? ' is-audible' : '') + (selected ? ' selected' : '') + '" data-url="' + esc(t.url) + '" tabindex="0" role="option" aria-selected="' + (selected ? 'true' : 'false') + '" aria-label="' + esc(t.title + '，' + t.artist) + '">' +
         '<div class="row-leading"><span class="idx">' + String(i + 1).padStart(2, '0') + '</span><button class="row-play" tabindex="-1" data-play="' + esc(t.url) + '" aria-label="播放 ' + esc(t.title) + '">' + icon('play') + '</button><span class="row-eq" aria-hidden="true"><i></i><i></i><i></i></span></div>' +
         '<div class="cover-cell">' + artMarkup(t.title, t.artist) + '<div class="cell"><div class="cell-title" title="' + esc(t.title) + '">' + esc(t.title) + '</div><div class="cell-sub" title="' + esc(t.artist) + '">' + esc(t.artist) + '</div></div></div>' +
+        '<div class="cell cell-muted col-source" title="' + esc(t.source || '未知') + '">' + esc(t.source ? sourceLabel(t.source) : '未知') + '</div>' +
         '<div class="cell cell-muted col-date">' + date + '</div>' +
         '<div><span class="badge' + (t.ext === 'flac' ? ' accent' : '') + '">' + esc(t.ext.toUpperCase()) + '</span></div>' +
         '<div class="cell-muted">' + formatSize(t.size) + '</div>' +
@@ -723,6 +724,7 @@ function skeletonRows(n) {
   return Array.from({ length: n }, () => '<div class="skeleton-row">' +
     '<span class="sk sk-index"></span>' +
     '<div class="sk-cover"><span class="sk sk-art"></span><div class="sk-lines"><span class="sk sk-line w60"></span><span class="sk sk-line w30"></span></div></div>' +
+    '<span class="sk sk-cell w-source"></span>' +
     '<span class="sk sk-cell w-date"></span>' +
     '<span class="sk sk-badge"></span>' +
     '<span class="sk sk-cell w-size"></span>' +

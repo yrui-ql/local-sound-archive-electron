@@ -14,7 +14,7 @@ try {
   }
 } catch (error) {}
 </script>
-<link rel="stylesheet" href="app.css?v=20261031-60">
+<link rel="stylesheet" href="app.css?v=20261031-61">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -128,7 +128,7 @@ try {
           <label class="sort-field"><span>排序</span><select id="libSort"><option value="time">最近添加</option><option value="artist">歌手</option><option value="title">歌名</option><option value="size">大小</option><option value="format">格式</option></select></label>
         </div>
         <div class="table-head lib-grid" aria-hidden="true">
-          <span class="col-index">#</span><span>歌曲</span><span class="col-date">日期</span><span class="col-format">格式</span><span class="col-size">大小</span>
+          <span class="col-index">#</span><span>歌曲</span><span class="col-source">来源</span><span class="col-date">日期</span><span class="col-format">格式</span><span class="col-size">大小</span>
         </div>
         <div id="libSkeleton" class="table-skeleton" aria-hidden="true"></div>
         <div id="libList" class="lib-list" role="listbox" aria-label="本地歌曲" tabindex="-1"></div>
@@ -565,10 +565,11 @@ try {
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=9"></script>
 <script src="pure.js?v=2"></script>
-<script src="app.js?v=20261031-49"></script>
+<script src="app.js?v=20261031-50"></script>
 <script src="custom-select.js?v=1"></script>
 </body>
 </html>
+
 
 
 

@@ -12,6 +12,7 @@ const { ExtensionScheduler } = require('./services/extension-scheduler')
 const { cleanTitleText, cleanDisplayTitle, safeFileName, isPathInside } = require('./services/files')
 const { buildSourceRegistry } = require('./services/sources')
 const { candidatePaths, parseDisplayIcon } = require('./services/agents')
+const { ProvenanceStore } = require('./services/provenance')
 const { LikesStore } = require('./services/likes')
 const { AccountService } = require('./services/account')
 
@@ -58,6 +59,7 @@ let libraryStore = null
 let extensionStore = null
 let extensionHost = null
 let extensionScheduler = null
+let provenanceStore = null
 let likesStore = null
 let accountService = null
 
@@ -67,6 +69,7 @@ async function loadConfig() {
   if (!extensionStore) extensionStore = new ExtensionStore(path.join(DATA_DIR, 'extensions'), path.join(APP_ROOT, 'extension-sdk', 'sample-source'))
   if (!extensionHost) extensionHost = new ExtensionHost(extensionStore)
   if (!extensionScheduler) extensionScheduler = new ExtensionScheduler({ host: extensionHost, store: extensionStore, dataDir: DATA_DIR })
+  if (!provenanceStore) provenanceStore = new ProvenanceStore(path.join(DATA_DIR, 'provenance.json'))
   if (!likesStore) likesStore = new LikesStore(DATA_DIR, BACKEND_URL)
   if (!accountService) accountService = new AccountService(DATA_DIR, BACKEND_URL)
   let defaults = {}
@@ -146,6 +149,7 @@ function publicTrack(file, root) {
     title: cleanDisplayTitle(file),
     artist: path.basename(path.dirname(file)),
     album: '',
+    source: '',
     ext,
     format: ext.toUpperCase(),
     size: 0,
@@ -169,6 +173,7 @@ async function collectAudioFiles(root, out, budget = 5000) {
 }
 
 async function buildLibrary() {
+  await provenanceStore.load()
   const files = []
   for (const root of musicDirs) await collectAudioFiles(root, files)
   const tracks = []
@@ -176,6 +181,7 @@ async function buildLibrary() {
   let totalBytes = 0
   for (const file of files) {
     const track = publicTrack(file, musicDirs.find((root) => file.startsWith(root + path.sep)))
+    track.source = provenanceStore.lookup(file)
     try {
       const stat = await fsp.stat(file)
       track.size = stat.size
@@ -355,6 +361,7 @@ async function getDownloads() {
       queue = refreshed.queue
     }
     const records = await backendJson('/music/api/downloads/records?page=1&page_size=100')
+    if (provenanceStore && records && Array.isArray(records.records)) await provenanceStore.ingestRecords(records.records)
     backendAvailable = true
     return { queue: recalculateQueue(queue, visibleQueueTasks(Array.isArray(queue.tasks) ? queue.tasks : [])), records, extensionJobs: extensionDownloadJobs() }
   } catch (error) {
@@ -1227,6 +1234,11 @@ async function downloadExtensionSong(song) {
     try { await fsp.rename(sourceFile, target); }
     catch { await fsp.copyFile(sourceFile, target); await fsp.unlink(sourceFile).catch(() => {}); }
     await fsp.rm(staging, { recursive: true, force: true }).catch(() => {});
+    await provenanceStore.record(target, {
+      source: song.source || song.extensionId || job.source,
+      title: result.title || job.name,
+      artist: result.artist || job.artist,
+    });
     job.status = 'success';
     job.path = target;
     postHostEvent('extension-download', { id: job.id, status: 'success', name: job.name, path: target });
@@ -1251,6 +1263,8 @@ async function getSources() {
   const data = await extensionStore.list()
   return { sources: buildSourceRegistry(data.extensions) }
 }
+
+
 
 
 

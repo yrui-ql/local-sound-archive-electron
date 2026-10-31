@@ -17,6 +17,7 @@ class LibraryStore {
         size INTEGER NOT NULL DEFAULT 0,
         duration REAL NOT NULL DEFAULT 0,
         mtime INTEGER NOT NULL DEFAULT 0,
+        source TEXT NOT NULL DEFAULT '',
         source_root TEXT NOT NULL DEFAULT '',
         updated_at INTEGER NOT NULL
       );
@@ -24,6 +25,7 @@ class LibraryStore {
       CREATE INDEX IF NOT EXISTS idx_tracks_artist ON tracks(artist);
       CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     `)
+    try { this.db.exec("ALTER TABLE tracks ADD COLUMN source TEXT NOT NULL DEFAULT ''") } catch { }
   }
 
   setMeta(key, value) {
@@ -38,8 +40,8 @@ class LibraryStore {
 
   replaceTracks(tracks) {
     const insert = this.db.prepare(`
-      INSERT INTO tracks(id, path, url, title, artist, album, ext, format, size, duration, mtime, source_root, updated_at)
-      VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO tracks(id, path, url, title, artist, album, ext, format, size, duration, mtime, source, source_root, updated_at)
+      VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(path) DO UPDATE SET
         id = excluded.id,
         url = excluded.url,
@@ -51,6 +53,7 @@ class LibraryStore {
         size = excluded.size,
         duration = excluded.duration,
         mtime = excluded.mtime,
+        source = excluded.source,
         source_root = excluded.source_root,
         updated_at = excluded.updated_at
     `)
@@ -62,7 +65,7 @@ class LibraryStore {
         insert.run(
           track.id, track.path, track.url, track.title, track.artist, track.album,
           track.ext, track.format, track.size, track.duration, track.mtime,
-          track.sourceRoot || '', now,
+          track.source || '', track.sourceRoot || '', now,
         )
       }
       this.db.exec('COMMIT')
@@ -74,7 +77,7 @@ class LibraryStore {
 
   all() {
     return this.db.prepare(`
-      SELECT id, path, url, title, artist, album, ext, format, size, duration, mtime, source_root AS sourceRoot
+      SELECT id, path, url, title, artist, album, ext, format, size, duration, mtime, source, source_root AS sourceRoot
       FROM tracks ORDER BY lower(title), lower(artist)
     `).all()
   }
