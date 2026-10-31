@@ -2786,3 +2786,14 @@ html[data-theme="green"] {
 }
 .row.playing.is-audible .row-leading .row-play { display: none !important; }
 .row.playing.is-audible .row-leading .row-eq { display: flex !important; }
+
+/* Locate the playing row: smooth scroll plus a short, non-permanent target flash. */
+.row.locate-target {
+  animation: locateRow 2.2s cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes locateRow {
+  0% { background: color-mix(in srgb, var(--ui-accent, var(--accent)) 22%, transparent); }
+  35% { background: color-mix(in srgb, var(--ui-accent, var(--accent)) 13%, transparent); }
+  100% { background: transparent; }
+}
+#btnLocatePlaying:disabled { opacity: .42; cursor: default; }

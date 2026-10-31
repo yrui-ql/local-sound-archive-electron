@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>留声 · LSA</title>
-<link rel="stylesheet" href="app.css?v=20261031-47">
+<link rel="stylesheet" href="app.css?v=20261031-48">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -24,6 +24,7 @@
   <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3v-4h.08A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 8.97 4.5 1.7 1.7 0 0 0 10 2.94V3h4v-.06a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 10H21v4h-.04A1.7 1.7 0 0 0 19.4 15Z"/></symbol>
   <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.5h6l2 2h9v9a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1Z"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 6.7M20 5v6h-6"/></symbol>
+  <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5v14M18 6l-9 6 9 6z"/></symbol>
@@ -90,6 +91,7 @@
       <header class="page-head">
         <div class="page-title"><h1 id="libTitle">音乐库</h1><p id="libSub">正在加载本地索引…</p></div>
         <div class="head-actions">
+          <button id="btnLocatePlaying" class="btn ghost small" disabled title="定位当前播放歌曲"><svg class="icon"><use href="#i-locate"/></svg>定位当前</button>
           <button id="btnExportM3u" class="btn ghost small">导出 M3U</button>
           <button id="btnOpenLib" class="btn ghost"><svg class="icon"><use href="#i-folder"/></svg>打开目录</button>
           <button id="btnRefresh" class="btn icon-btn ghost" aria-label="刷新音乐库" title="刷新音乐库"><svg class="icon"><use href="#i-refresh"/></svg></button>
@@ -551,10 +553,11 @@
 </div>
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=9"></script>
-<script src="app.js?v=20261031-35"></script>
+<script src="app.js?v=20261031-36"></script>
 <script src="custom-select.js?v=1"></script>
 </body>
 </html>
+
 
 
 

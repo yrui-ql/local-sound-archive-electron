@@ -778,6 +778,49 @@ $('#libFilters').addEventListener('click', (e) => {
   renderLibrary();
 });
 $('#libSort').addEventListener('change', (e) => { state.sort = e.target.value; state.limit = 80; savePlayerPrefs(); renderLibrary(); });
+
+function locatePlaying() {
+  const playing = state.playing;
+  if (!playing) { toast('当前没有播放歌曲'); return; }
+  if (state.page !== 'library') showPage('library');
+  let filtered = filteredLibrary();
+  let index = filtered.findIndex((item) => item.url === playing.url || (playing.path && item.path === playing.path));
+  if (index < 0) {
+    state.query = '';
+    state.filter = 'all';
+    const input = $('#libSearch');
+    if (input) input.value = '';
+    const clear = $('#libSearchClear');
+    if (clear) clear.classList.add('hidden');
+    $$('#libFilters .chip').forEach((chip) => chip.classList.toggle('active', chip.dataset.filter === 'all'));
+    state.limit = 80;
+    renderLibrary();
+    filtered = filteredLibrary();
+    index = filtered.findIndex((item) => item.url === playing.url || (playing.path && item.path === playing.path));
+  }
+  if (index < 0) { toast('当前歌曲不在本地音乐库里', 'err'); return; }
+  if (index >= state.limit) {
+    state.limit = Math.ceil((index + 1) / 80) * 80;
+    renderLibrary();
+  }
+  requestAnimationFrame(() => {
+    const list = $('#libList');
+    const row = Array.from(list.querySelectorAll('.row')).find((item) => item.dataset.url === playing.url || item.dataset.path === playing.path);
+    if (!row) { toast('列表里没有找到这首歌', 'err'); return; }
+    const listRect = list.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const top = list.scrollTop + (rowRect.top - listRect.top) - (list.clientHeight - rowRect.height) / 2;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    list.scrollTo({ top: Math.max(0, top), behavior: reduced ? 'auto' : 'smooth' });
+    row.classList.remove('locate-target');
+    void row.offsetWidth;
+    row.classList.add('locate-target');
+    clearTimeout(locatePlaying._timer);
+    locatePlaying._timer = setTimeout(() => row.classList.remove('locate-target'), 2400);
+    row.focus({ preventScroll: true });
+  });
+}
+$('#btnLocatePlaying').addEventListener('click', locatePlaying);
 $('#btnMore').addEventListener('click', () => { state.limit += 80; renderLibrary(); });
 $('#btnOpenLib').addEventListener('click', () => call('openFolder', { kind: 'library' }).catch(() => {}));
 $('#btnExportM3u').addEventListener('click', async () => {
@@ -821,6 +864,8 @@ function updateNowPlaying(track) {
   $('#playerFmt').textContent = fmt;
   $('#playerFmt').classList.toggle('hidden', !fmt);
   setPlayerArt(track);
+  const locate = $('#btnLocatePlaying');
+  if (locate) locate.disabled = !track;
   if (lyricsOpen) { updateLyricsHeader(track); loadLyricsFor(track); }
 }
 function updatePlayButton() {
