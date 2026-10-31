@@ -2,6 +2,10 @@
 
 This is the working loop for LSA changes. It exists so implementation decisions are researched and verified instead of guessed.
 
+## 0. Product framing first
+
+Before any code, write the user task and the state matrix. Use `docs/checklists/feature-delivery.md` and `docs/product-reflection-2026-10-31.md`. A feature is not a host command; it is a complete user path with empty, loading, success, failure and retry states.
+
 ## 1. Classify the change
 
 | Type | Examples | Required before code |
