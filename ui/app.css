@@ -2629,3 +2629,26 @@ select.native-select {
 }
 .custom-select-option:hover, .custom-select-option.selected { background: var(--ui-hover, rgba(255,255,255,.065)); color: var(--ui-text, var(--ink)); }
 .custom-select-option.selected::after { content: '✓'; margin-left: auto; color: var(--ui-accent, var(--accent)); font-size: 11px; }
+
+/* Library row: play/control lives in the leading slot, not at the far right. */
+.lib-grid { grid-template-columns: 34px minmax(220px, 2.3fr) minmax(120px, 1.2fr) 64px 72px; }
+.row-leading { position: relative; width: 34px; height: 34px; display: grid; place-items: center; }
+.row-leading .idx { position: absolute; inset: 0; display: grid; place-items: center; transition: opacity .14s ease; }
+.row-leading .row-play {
+  position: absolute; inset: 2px; width: 30px; height: 30px;
+  opacity: 0; pointer-events: none; transform: scale(.92);
+  transition: opacity .14s ease, transform .14s ease, color .14s ease, background .14s ease;
+}
+.row:hover .row-leading .idx,
+.row:focus-visible .row-leading .idx,
+.row.playing .row-leading .idx { opacity: 0; }
+.row:hover .row-leading .row-play,
+.row:focus-visible .row-leading .row-play { opacity: 1; pointer-events: auto; transform: none; }
+.row.playing.is-audible .row-leading .row-play { display: none; }
+.row-eq { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 2px; opacity: 0; color: var(--ui-accent, var(--accent)); transition: opacity .14s ease; }
+.row-eq i { width: 2px; height: 5px; border-radius: 2px; background: currentColor; animation: rowEq .9s ease-in-out infinite alternate; }
+.row-eq i:nth-child(2) { height: 11px; animation-delay: .15s; }
+.row-eq i:nth-child(3) { height: 7px; animation-delay: .3s; }
+.row.playing.is-audible .row-eq { opacity: 1; }
+@keyframes rowEq { from { transform: scaleY(.55); opacity: .55; } to { transform: scaleY(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .row-eq i { animation: none; } }

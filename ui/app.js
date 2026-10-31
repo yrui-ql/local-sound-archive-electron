@@ -608,10 +608,14 @@ function updateStats() {
 }
 function updateRowPlayIcons() {
   $$('#libList .row').forEach((row) => {
-    const isPlaying = state.playing && state.playing.url === row.dataset.url && state.isPlaying;
+    const current = !!(state.playing && state.playing.url === row.dataset.url);
+    const audible = current && state.isPlaying;
     const use = row.querySelector('.row-play use');
-    if (use) use.setAttribute('href', isPlaying ? '#i-pause' : '#i-play');
-    row.classList.toggle('playing', !!(state.playing && state.playing.url === row.dataset.url));
+    if (use) use.setAttribute('href', '#i-play');
+    row.classList.toggle('playing', current);
+    row.classList.toggle('is-audible', audible);
+    const button = row.querySelector('.row-play');
+    if (button) button.setAttribute('aria-label', '播放 ' + (row.querySelector('.cell-title')?.textContent || ''));
   });
 }
 function renderLibrary() {
@@ -631,13 +635,12 @@ function renderLibrary() {
       const playing = currentUrl === t.url;
       const selected = state.selectedTrack === t.url;
       const dur = t.duration ? formatTime(t.duration) : '';
-      return '<div class="row lib-grid' + (playing ? ' playing' : '') + (selected ? ' selected' : '') + '" data-url="' + esc(t.url) + '" tabindex="0" role="option" aria-selected="' + (selected ? 'true' : 'false') + '" aria-label="' + esc(t.title + '，' + t.artist) + '">' +
-        '<span class="idx">' + String(i + 1).padStart(2, '0') + '</span>' +
+      return '<div class="row lib-grid' + (playing ? ' playing' : '') + (playing && state.isPlaying ? ' is-audible' : '') + (selected ? ' selected' : '') + '" data-url="' + esc(t.url) + '" tabindex="0" role="option" aria-selected="' + (selected ? 'true' : 'false') + '" aria-label="' + esc(t.title + '，' + t.artist) + '">' +
+        '<div class="row-leading"><span class="idx">' + String(i + 1).padStart(2, '0') + '</span><button class="row-play" tabindex="-1" data-play="' + esc(t.url) + '" aria-label="播放 ' + esc(t.title) + '">' + icon('play') + '</button><span class="row-eq" aria-hidden="true"><i></i><i></i><i></i></span></div>' +
         '<div class="cover-cell">' + artMarkup(t.title, t.artist) + '<div class="cell"><div class="cell-title" title="' + esc(t.title) + '">' + esc(t.title) + '</div><div class="cell-sub" title="' + esc(t.artist) + '">' + esc(t.artist) + '</div></div></div>' +
         '<div class="cell cell-muted col-album" title="' + esc(t.album || '—') + '">' + esc(t.album || '—') + '</div>' +
         '<div><span class="badge' + (t.ext === 'flac' ? ' accent' : '') + '">' + esc(t.ext.toUpperCase()) + '</span></div>' +
         '<div class="cell-muted">' + formatSize(t.size) + (dur ? ' <span class="cell-sub">' + dur + '</span>' : '') + '</div>' +
-        '<button class="row-play" tabindex="-1" data-play="' + esc(t.url) + '" aria-label="' + (playing && state.isPlaying ? '暂停' : '播放') + ' ' + esc(t.title) + '">' + icon(playing && state.isPlaying ? 'pause' : 'play') + '</button>' +
         '</div>';
     }).join('');
   }
