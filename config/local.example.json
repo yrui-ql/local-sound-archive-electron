@@ -1,0 +1,7 @@
+{
+  "_comment": "Copy this file to the app data directory as config.json and replace the placeholder. Local config is never committed.",
+  "musicDirs": [
+    "${MUSIC_DIR}"
+  ],
+  "backendUrl": "http://127.0.0.1:18088"
+}

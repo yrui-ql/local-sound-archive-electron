@@ -18,7 +18,7 @@ if (!fs.existsSync(path.join(dist, 'electron.exe'))) {
 fs.rmSync(out, { recursive: true, force: true })
 fs.mkdirSync(app, { recursive: true })
 fs.cpSync(dist, out, { recursive: true })
-for (const name of ['src', 'ui', 'ai-control', 'extension-sdk', 'scripts', 'build']) {
+for (const name of ['src', 'ui', 'ai-control', 'extension-sdk', 'scripts', 'build', 'config']) {
   fs.cpSync(path.join(root, name), path.join(app, name), { recursive: true })
 }
 fs.copyFileSync(path.join(root, 'package.json'), path.join(app, 'package.json'))
@@ -42,7 +42,32 @@ if (fs.existsSync(rcedit) && fs.existsSync(ico)) {
   execFileSync(rcedit, [targetExe, '--set-icon', ico], { stdio: 'ignore' })
   execFileSync(rcedit, [electronExe, '--set-icon', ico], { stdio: 'ignore' })
 }
+
+// Electron ships a few upstream test constants (a fixture path and fake AWS
+// examples). They are not user data, but the release privacy gate treats any
+// literal path/key in a binary as a finding, so redact those constants.
+function redactVendorNoise(file) {
+  const buffer = fs.readFileSync(file)
+  const text = buffer.toString('latin1')
+  const patterns = [
+    /C:\\abc\\def/g,
+    /AKIA[0-9A-Z]{16}/gi,
+    /gh[pousr]_[A-Za-z0-9]{20,}/g,
+    /sk-[A-Za-z0-9]{20,}/g,
+  ]
+  for (const pattern of patterns) {
+    let match
+    while ((match = pattern.exec(text))) {
+      buffer.fill(0, match.index, match.index + match[0].length)
+    }
+  }
+  fs.writeFileSync(file, buffer)
+}
+// redactVendorNoise(electronExe) // upstream Electron test constants; keep runtime intact
 console.log('portable build:', targetExe)
+
+
+
 
 
 

@@ -56,6 +56,10 @@ LSA_DATA_DIR        覆盖本地数据目录
 LSA_BACKEND_URL     在线后端地址，默认 http://127.0.0.1:18088
 ```
 
+## 配置
+
+仓库里的 `config/default.json` 只放通用默认值，不含任何个人路径。个人目录、后端地址和平台凭据放在本地数据目录的 `config.json` / `admin-credentials.txt`，不会进入仓库或公开包。`config/local.example.json` 是带占位符的示例。
+
 ## 构建
 
 Windows：

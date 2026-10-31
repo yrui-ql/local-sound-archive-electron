@@ -24,6 +24,7 @@
       "extension-sdk/**/*",
       "scripts/**/*",
       "build/**/*",
+      "config/**/*",
       "package.json"
     ],
     "extraMetadata": {

@@ -55,9 +55,15 @@ async function loadConfig() {
   if (!extensionHost) extensionHost = new ExtensionHost(extensionStore)
   if (!likesStore) likesStore = new LikesStore(DATA_DIR, BACKEND_URL)
   if (!accountService) accountService = new AccountService(DATA_DIR, BACKEND_URL)
+  let defaults = {}
+  try {
+    const defaultPath = path.join(APP_ROOT, 'config', 'default.json')
+    if (fs.existsSync(defaultPath)) defaults = JSON.parse((await fsp.readFile(defaultPath, 'utf8')).replace(/^\uFEFF/, ''))
+  } catch { }
   try {
     if (fs.existsSync(CONFIG_PATH)) config = JSON.parse((await fsp.readFile(CONFIG_PATH, 'utf8')).replace(/^\uFEFF/, ''))
   } catch { config = {} }
+  config = { ...defaults, ...config }
   const legacyConfigPath = path.join(DATA_DIR, 'client-config.json')
   if ((!Array.isArray(config.musicDirs) || !config.musicDirs.length) && fs.existsSync(legacyConfigPath)) {
     try {
