@@ -139,3 +139,45 @@ Agent 只能在 `extensions-dev` 中生成草稿；安装需要健康检查，�
 
 
 
+## 来源自动注册
+
+扩展可以在 manifest 里声明来源；启用后自动出现在搜索来源筛选里：
+
+```json
+{
+  "sources": [
+    { "id": "youtube-music", "name": "YouTube Music", "auth": [], "likes": false }
+  ]
+}
+```
+
+核心的命令 `getSources` 会合并内置来源和所有已启用扩展的来源，UI 不写死平台列表。
+
+## 定时任务
+
+扩展可以声明任务；核心调度器启动后按 `defaultIntervalHours` 运行：
+
+```json
+{
+  "jobs": [
+    { "id": "daily-news", "title": "每日新闻同步", "defaultIntervalHours": 24 }
+  ]
+}
+```
+
+核心负责持久化 `extension-jobs.json`、计算 `nextRunAt`、调用扩展的 `job.run` 并记录成功/失败。扩展只实现任务内容，不自己维护定时器。
+
+## 账号与喜欢（协议）
+
+扩展可以用以下方法声明/实现账号和喜欢能力：
+
+```text
+auth.begin      (method)  发起扫码 / Cookie / OAuth
+auth.poll       (state)   查询登录状态
+auth.restore               恢复本地授权
+auth.logout                退出
+likes.list                 返回当前喜欢列表
+likes.unlike               取消平台喜欢（可选）
+```
+
+核心通过 `extensionInvoke` 调用扩展方法；平台扩展负责协议细节，核心负责通用容器、差异比较和入库。当前内置三平台仍走内置适配器，迁移为扩展是下一阶段。

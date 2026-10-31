@@ -1,4 +1,4 @@
-# LSA · 留声
+﻿# LSA · 留声
 
 **中文** | [English](#english)
 
@@ -26,7 +26,7 @@ LSA / 留声是一个本地优先的音乐归档与播放器。它扫描你的�
 | 在线服务 | 本机 `go-music-dl` 代理搜索、下载队列与任务操作 |
 | 账号 | 网易云 / QQ 扫码登录，汽水客户端 Cookie 读取 |
 | 喜欢同步 | 同步配置、状态、失败任务清理 |
-| 扩展 | 扩展安装/启用/禁用/移除、扩展音源搜索、本地下载入库、扩展 SDK |
+| 扩展 | 扩展安装/启用/禁用/移除、来源自动注册、扩展音源搜索、本地下载入库、扩展任务调度、扩展 SDK |
 | AI 控制 | localhost HTTP API + MCP，端口可配置，占用时自动顺延 |
 | 录音 | 系统声音录制、试听、删除、分页列表 |
 | 桌面体验 | 单实例唤醒、Windows 托盘、无边框窗口、主题、界面比例 |
@@ -153,7 +153,7 @@ The desktop app is built on Electron and reuses the existing HTML/CSS/JS rendere
 | Online | local `go-music-dl` proxy for search, download queue and task actions |
 | Accounts | NetEase / QQ QR login, Soda client cookie import |
 | Likes | sync configuration, status, failed-task cleanup |
-| Extensions | install/enable/disable/remove, extension source search, local download import, extension SDK |
+| Extensions | install/enable/disable/remove, source auto-registration, extension source search, local download import, extension job scheduling, extension SDK |
 | AI control | localhost HTTP API + MCP, configurable port with automatic fallback |
 | Recording | system-audio recording, playback, delete, paginated list |
 | Desktop | single-instance wake-up, Windows tray, frameless window, themes, UI scale |
@@ -259,5 +259,6 @@ Source, configuration, README and the launcher must pass `privacy-audit`. The of
 ### License
 
 MIT
+
 
 

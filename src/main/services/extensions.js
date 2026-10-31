@@ -1,4 +1,4 @@
-﻿const fs = require('node:fs')
+const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const path = require('node:path')
 
@@ -23,7 +23,7 @@ class ExtensionStore {
     await fsp.writeFile(this.statePath, JSON.stringify(state, null, 2))
   }
 
-  async list() {
+﻿  async list() {
     const state = await this.state()
     const extensions = []
     await fsp.mkdir(this.root, { recursive: true })
@@ -42,6 +42,9 @@ class ExtensionStore {
         kind: manifest.kind || 'source',
         description: manifest.description || '',
         permissions: Array.isArray(manifest.permissions) ? manifest.permissions : [],
+        capabilities: Array.isArray(manifest.capabilities) ? manifest.capabilities : [],
+        sources: Array.isArray(manifest.sources) ? manifest.sources : [],
+        jobs: Array.isArray(manifest.jobs) ? manifest.jobs : [],
         canRollback: false,
         lastGood: null,
       })
@@ -60,7 +63,6 @@ class ExtensionStore {
       let manifest = {}
       try { manifest = JSON.parse((await fsp.readFile(path.join(dir, 'extension.json'), 'utf8')).replace(/^\uFEFF/, '')) } catch { }
       if (!manifest.id || state.disabled.includes(manifest.id)) continue
-      if (manifest.capabilities && !manifest.capabilities.includes('search')) continue
       out.push({ dir, manifest })
     }
     return out

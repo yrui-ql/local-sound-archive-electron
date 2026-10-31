@@ -49,6 +49,8 @@ class ExtensionHost {
     const errors = []
     const extensions = await this.store.enabled()
     for (const extension of extensions) {
+      const capabilities = Array.isArray(extension.manifest.capabilities) ? extension.manifest.capabilities : []
+      if (capabilities.length && !capabilities.includes('search')) continue
       const response = await this.call(extension.dir, extension.manifest, 'search', { query, limit: 15 }, 30000)
       if (!response.ok) { errors.push(extension.manifest.name + ': ' + response.error); continue }
       const list = response.result?.songs || []
@@ -69,6 +71,12 @@ class ExtensionHost {
     const response = await this.call(extension.dir, extension.manifest, 'resolve', { song, outputDir }, 15 * 60 * 1000)
     if (!response.ok) return response
     return { ok: true, result: response.result }
+  }
+
+  async invoke(extensionId, method, params = {}, timeoutMs = 30000) {
+    const extension = (await this.store.enabled()).find((item) => item.manifest.id === extensionId)
+    if (!extension) return { ok: false, error: '扩展未启用：' + extensionId }
+    return this.call(extension.dir, extension.manifest, method, params, timeoutMs)
   }
 }
 

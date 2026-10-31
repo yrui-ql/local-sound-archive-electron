@@ -1,0 +1,18 @@
+{
+  "id": "news-feed",
+  "name": "新闻同步示例",
+  "version": "0.1.0",
+  "description": "演示定时任务能力：按计划抓取并落一份新闻索引。",
+  "runtime": "node",
+  "entry": "index.mjs",
+  "kind": "feed",
+  "capabilities": ["scheduler"],
+  "jobs": [
+    {
+      "id": "daily-news",
+      "title": "每日新闻同步",
+      "defaultIntervalHours": 24
+    }
+  ],
+  "permissions": ["network", "cache"]
+}

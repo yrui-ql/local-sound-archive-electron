@@ -2701,3 +2701,6 @@ html[data-theme="green"] {
 .extension-downloads .panel-head h2 { font-size: 13px; }
 .extension-downloads .panel-head p { font-size: 10px; }
 
+.source-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 10px; }
+.source-chips:empty { display: none; }
+.source-chips .chip { font-size: 10.5px; }

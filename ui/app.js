@@ -17,6 +17,8 @@ const state = {
   recent: [],
   search: [],
   searchLoading: false,
+  searchSource: 'all',
+  sources: [],
   selected: new Set(),
   playing: null,
   isPlaying: false,
@@ -2118,17 +2120,49 @@ async function doSearch() {
     $('#btnSearch').disabled = false;
   }
 }
+function visibleSearchEntries() {
+  return state.search
+    .map((song, index) => ({ song, index }))
+    .filter(({ song }) => state.searchSource === 'all' || song.source === state.searchSource);
+}
+function renderSearchSources() {
+  const box = $('#searchSources');
+  if (!box) return;
+  const all = [{ id: 'all', name: '全部来源', kind: 'all' }, ...state.sources];
+  box.innerHTML = all.map((source) =>
+    '<button type="button" class="chip' + (state.searchSource === source.id ? ' active' : '') + '" data-source="' + esc(source.id) + '">' + esc(source.name) + '</button>'
+  ).join('');
+  box.querySelectorAll('[data-source]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.searchSource = button.dataset.source;
+      renderSearchSources();
+      renderSearch();
+    });
+  });
+}
+async function loadSearchSources() {
+  try {
+    const data = await call('getSources');
+    state.sources = Array.isArray(data.sources) ? data.sources : [];
+  } catch {
+    state.sources = [];
+  }
+  renderSearchSources();
+}
 function renderSearch() {
   $('#searchSkeleton').classList.add('hidden');
   const list = $('#searchList');
-  $('#page-search').classList.toggle('has-results', state.search.length > 0);
-  $('#searchCount').textContent = state.search.length ? '找到 ' + state.search.length + ' 首' : '还没有结果';
-  if (!state.search.length) {
+  const entries = visibleSearchEntries();
+  $('#page-search').classList.toggle('has-results', entries.length > 0);
+  $('#searchCount').textContent = entries.length
+    ? '找到 ' + entries.length + ' 首' + (entries.length !== state.search.length ? ' / 共 ' + state.search.length + ' 首' : '')
+    : '还没有结果';
+  if (!entries.length) {
     if (!state.searchLoading) list.innerHTML = emptyState('search', '还没有结果', '输入歌名、歌手，或粘贴分享链接。');
     updateBatchControls();
     return;
   }
-  list.innerHTML = state.search.map((s, i) => {
+  list.innerHTML = entries.map(({ song: s, index: i }) => {
     const selected = state.selected.has(i);
     return '<div class="row search-row" data-i="' + i + '">' +
       '<button type="button" class="check" data-check="' + i + '" role="checkbox" aria-checked="' + (selected ? 'true' : 'false') + '" aria-label="选择 ' + esc(s.name) + '">' + icon('check') + '</button>' +
@@ -2148,10 +2182,11 @@ function renderSearch() {
   updateBatchControls();
 }
 function updateBatchControls() {
-  const n = state.selected.size;
-  $('#btnSelectAll').textContent = n && n === state.search.length ? '取消全选' : '全选';
-  $('#btnDownloadSelected').disabled = n === 0;
-  $('#btnDownloadSelected').textContent = n ? '下载选中（' + n + '）' : '下载选中';
+  const entries = visibleSearchEntries();
+  const selectedVisible = entries.filter(({ index }) => state.selected.has(index)).length;
+  $('#btnSelectAll').textContent = selectedVisible && selectedVisible === entries.length ? '取消全选' : '全选';
+  $('#btnDownloadSelected').disabled = state.selected.size === 0;
+  $('#btnDownloadSelected').textContent = state.selected.size ? '下载选中（' + state.selected.size + '）' : '下载选中';
 }
 async function downloadSongs(songs) {
   if (!songs.length || state.busy) return;
@@ -2170,8 +2205,10 @@ async function downloadSongs(songs) {
 $('#searchForm').addEventListener('submit', (e) => { e.preventDefault(); doSearch(); });
 $('#btnSearch').addEventListener('click', (e) => { e.preventDefault(); doSearch(); });
 $('#btnSelectAll').addEventListener('click', () => {
-  if (state.selected.size === state.search.length) state.selected.clear();
-  else state.search.forEach((_, i) => state.selected.add(i));
+  const entries = visibleSearchEntries();
+  const allSelected = entries.length > 0 && entries.every(({ index }) => state.selected.has(index));
+  if (allSelected) entries.forEach(({ index }) => state.selected.delete(index));
+  else entries.forEach(({ index }) => state.selected.add(index));
   renderSearch();
 });
 $('#btnDownloadSelected').addEventListener('click', () => {
@@ -2989,6 +3026,7 @@ async function loadExtensions() {
     state.extensions = data.extensions || [];
     state.extensionSafeMode = !!data.safeMode;
     renderExtensions();
+    loadSearchSources();
   } catch (err) {
     $('#extensionList').innerHTML = emptyState('extensions', '无法读取扩展', err.message);
   }
@@ -3007,10 +3045,15 @@ function renderExtensions() {
   list.innerHTML = state.extensions.map((ext) => {
     const active = ext.enabled && !safe;
     const badge = safe ? '安全模式' : active ? '已启用' : '已禁用';
+    const caps = Array.isArray(ext.capabilities) ? ext.capabilities : [];
+    const sources = Array.isArray(ext.sources) ? ext.sources : [];
+    const jobs = Array.isArray(ext.jobs) ? ext.jobs : [];
     return '<div class="extension-item" data-ext-id="' + esc(ext.id) + '">' +
       '<div class="extension-main"><div class="extension-title"><strong>' + esc(ext.name || ext.id) + '</strong><span class="badge' + (active ? ' accent' : '') + '">' + badge + '</span><span class="badge">' + esc(ext.kind || 'source') + '</span></div>' +
       '<small>' + esc(ext.id) + ' · v' + esc(ext.activeVersion || ext.version || '—') + (ext.canRollback ? ' · 可回退到 v' + esc(ext.lastGood) : '') + (ext.permissions && ext.permissions.length ? ' · 权限：' + esc(ext.permissions.join(', ')) : '') + '</small>' +
-      '<p>' + esc(ext.description || '本地 JSON-RPC 扩展') + '</p></div>' +
+      '<p>' + esc(ext.description || '本地 JSON-RPC 扩展') + '</p>' +
+      (caps.length ? '<p class="extension-capabilities">能力：' + esc(caps.join(' · ')) + (sources.length ? ' · 来源：' + esc(sources.map((source) => source.name || source.id).join('、')) : '') + (jobs.length ? ' · 定时任务：' + esc(jobs.map((job) => job.title || job.id).join('、')) : '') + '</p>' : '') +
+      '</div>' +
       '<div class="extension-actions">' +
       '<button class="btn ghost small" data-ext-action="' + (active ? 'disable' : 'enable') + '">' + (active ? '禁用' : '启用') + '</button>' +
       (ext.canRollback ? '<button class="btn ghost small" data-ext-action="rollback">回退</button>' : '') +
@@ -3173,6 +3216,7 @@ document.addEventListener('keydown', (e) => {
 (async function init() {
   initTheme();
   initUiScale();
+  loadSearchSources();
   loadPlayerPrefs();
   state.recent = readRecent();
   $$('.info-btn').forEach((b) => { b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', 'infoPopover'); });
@@ -3192,6 +3236,7 @@ document.addEventListener('keydown', (e) => {
   setInterval(async () => { await pollRecord(); renderRecord(); }, 1000);
   renderRecord();
 })();
+
 
 
 

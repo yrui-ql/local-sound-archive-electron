@@ -8,6 +8,7 @@ const { spawn } = require('node:child_process')
 const { LibraryStore } = require('./services/library')
 const { ExtensionStore } = require('./services/extensions')
 const { ExtensionHost } = require('./services/extension-host')
+const { ExtensionScheduler } = require('./services/extension-scheduler')
 const { LikesStore } = require('./services/likes')
 const { AccountService } = require('./services/account')
 
@@ -53,6 +54,7 @@ let aiLastError = ''
 let libraryStore = null
 let extensionStore = null
 let extensionHost = null
+let extensionScheduler = null
 let likesStore = null
 let accountService = null
 
@@ -61,6 +63,7 @@ async function loadConfig() {
   if (!libraryStore) libraryStore = new LibraryStore(path.join(DATA_DIR, 'library.db'))
   if (!extensionStore) extensionStore = new ExtensionStore(path.join(DATA_DIR, 'extensions'), path.join(APP_ROOT, 'extension-sdk', 'sample-source'))
   if (!extensionHost) extensionHost = new ExtensionHost(extensionStore)
+  if (!extensionScheduler) extensionScheduler = new ExtensionScheduler({ host: extensionHost, store: extensionStore, dataDir: DATA_DIR })
   if (!likesStore) likesStore = new LikesStore(DATA_DIR, BACKEND_URL)
   if (!accountService) accountService = new AccountService(DATA_DIR, BACKEND_URL)
   let defaults = {}
@@ -795,6 +798,17 @@ async function handleCommand(cmd, args) {
     }
     case 'extensionDownloads':
       return getExtensionDownloads()
+    case 'getSources':
+      return getSources()
+    case 'extensionInvoke':
+      return extensionHost.invoke(String(args?.id || ''), String(args?.method || ''), args?.params || {}, Number(args?.timeoutMs) || 30000)
+    case 'getExtensionJobs':
+      return { jobs: extensionScheduler ? extensionScheduler.jobs() : [] }
+    case 'runExtensionJob': {
+      const key = String(args?.key || '')
+      if (!extensionScheduler || !extensionScheduler.state.jobs[key]) return { ok: false, error: '任务不存在' }
+      return extensionScheduler.run(key)
+    }
     case 'download':
       return queueDownloads(args?.songs)
     case 'downloadAction':
@@ -1112,6 +1126,7 @@ app.whenReady().then(async () => {
   await loadAiConfig()
   await startAudioServer()
   await createWindow()
+  await extensionScheduler.start()
   createTray()
   if (aiConfig.enabled) await startAiServer()
   app.on('activate', showMainWindow)
@@ -1125,6 +1140,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   forceQuit = true
+  extensionScheduler?.stop()
   stopAiServer()
   if (audioServer) {
     try { audioServer.close() } catch { }
@@ -1235,3 +1251,28 @@ function startExtensionDownloads(songs) {
 async function getExtensionDownloads() {
   return { jobs: Array.from(localDownloads.values()).slice(-100).reverse() };
 }
+async function getSources() {
+  const builtin = [
+    { id: 'netease', name: '网易云音乐', kind: 'builtin', auth: ['qr'], likes: true },
+    { id: 'qq', name: 'QQ 音乐', kind: 'builtin', auth: ['qr'], likes: true },
+    { id: 'soda', name: '汽水音乐', kind: 'builtin', auth: ['cookie'], likes: true },
+  ]
+  const data = await extensionStore.list()
+  const extensions = []
+  for (const extension of data.extensions) {
+    if (!extension.enabled) continue
+    for (const source of extension.sources) {
+      if (!source || !source.id) continue
+      extensions.push({
+        id: source.id,
+        name: source.name || extension.name,
+        kind: 'extension',
+        extensionId: extension.id,
+        auth: Array.isArray(source.auth) ? source.auth : source.auth ? [source.auth] : [],
+        likes: !!source.likes,
+      })
+    }
+  }
+  return { sources: [...builtin, ...extensions] }
+}
+
