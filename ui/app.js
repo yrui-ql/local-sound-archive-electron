@@ -3140,8 +3140,6 @@ function renderExtensions() {
     const caps = Array.isArray(ext.capabilities) ? ext.capabilities : [];
     const sources = Array.isArray(ext.sources) ? ext.sources : [];
     const jobs = Array.isArray(ext.jobs) ? ext.jobs : [];
-    const hasAuth = active && sources.some((source) => (Array.isArray(source.auth) ? source.auth.length : source.auth));
-    const hasLikes = active && sources.some((source) => source.likes);
     return '<div class="extension-item" data-ext-id="' + esc(ext.id) + '">' +
       '<div class="extension-main"><div class="extension-title"><strong>' + esc(ext.name || ext.id) + '</strong><span class="badge' + (active ? ' accent' : '') + '">' + badge + '</span><span class="badge">' + esc(ext.kind || 'source') + '</span></div>' +
       '<small>' + esc(ext.id) + ' · v' + esc(ext.activeVersion || ext.version || '—') + (ext.canRollback ? ' · 可回退到 v' + esc(ext.lastGood) : '') + (ext.permissions && ext.permissions.length ? ' · 权限：' + esc(ext.permissions.join(', ')) : '') + '</small>' +
@@ -3149,8 +3147,6 @@ function renderExtensions() {
       (caps.length ? '<p class="extension-capabilities">能力：' + esc(caps.join(' · ')) + (sources.length ? ' · 来源：' + esc(sources.map((source) => source.name || source.id).join('、')) : '') + (jobs.length ? ' · 定时任务：' + esc(jobs.map((job) => job.title || job.id).join('、')) : '') + '</p>' : '') +
       '</div>' +
       '<div class="extension-actions">' +
-      (hasAuth ? '<button class="btn ghost small" data-ext-auth="' + esc(ext.id) + '">连接账号</button>' : '') +
-      (hasLikes ? '<button class="btn ghost small" data-ext-likes="' + esc(ext.id) + '">同步喜欢</button>' : '') +
       '<button class="btn ghost small" data-ext-action="' + (active ? 'disable' : 'enable') + '">' + (active ? '禁用' : '启用') + '</button>' +
       (ext.canRollback ? '<button class="btn ghost small" data-ext-action="rollback">回退</button>' : '') +
       '<button class="btn ghost small" data-ext-action="remove">移除</button>' +
@@ -3170,43 +3166,7 @@ function renderExtensions() {
       else toast((res && res.error) || '扩展操作失败', 'err');
     });
   });
-  list.querySelectorAll('[data-ext-auth]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      const id = button.dataset.extAuth;
-      button.disabled = true;
-      button.textContent = '连接中…';
-      try {
-        const res = await call('extensionInvoke', { id, method: 'auth.begin', params: {}, timeoutMs: 120000 }).catch((error) => ({ ok: false, error: error.message }));
-        if (res && res.ok) {
-          const result = res.result || {};
-          const extension = state.extensions.find((item) => item.id === id);
-          if (result.url || result.image_url) await openExtensionAuth(extension || { id, name: id }, result);
-          else toast(result.message || '账号已连接', 'ok');
-        } else toast('连接失败：' + ((res && res.error) || '未知错误'), 'err');
-      } finally {
-        button.disabled = false;
-        button.textContent = '连接账号';
-      }
-    });
-  });
-  list.querySelectorAll('[data-ext-likes]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      const id = button.dataset.extLikes;
-      button.disabled = true;
-      button.textContent = '同步中…';
-      try {
-        const res = await call('extensionInvoke', { id, method: 'likes.sync', params: {}, timeoutMs: 600000 }).catch((error) => ({ ok: false, error: error.message }));
-        if (res && res.ok) {
-          const result = res.result || {};
-          toast('喜欢同步：共 ' + (result.total || 0) + ' 首，新增 ' + (result.fresh || 0) + '，入队 ' + (result.queued || 0), 'ok');
-          loadDownloads();
-        } else toast('喜欢同步失败：' + ((res && res.error) || '未知错误'), 'err');
-      } finally {
-        button.disabled = false;
-        button.textContent = '同步喜欢';
-      }
-    });
-  });
+
 }
 async function installExtensionFromFolder() {
   const picked = await call('chooseFolder', { initial: '' }).catch(() => null);
