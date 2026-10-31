@@ -273,14 +273,53 @@ async function searchBackend(query) {
   return { songs, count: songs.length }
 }
 
+const FINISHED_QUEUE_STATUSES = new Set(['success', 'completed', 'done', 'finished'])
+
+function queueTaskStatus(task) {
+  return String(task?.Status || task?.status || '').toLowerCase()
+}
+
+function queueTaskId(task) {
+  return Number(task?.ID || task?.id || 0)
+}
+
+function visibleQueueTasks(tasks) {
+  return tasks.filter((task) => !FINISHED_QUEUE_STATUSES.has(queueTaskStatus(task)))
+}
+
+function recalculateQueue(queue, tasks) {
+  const counts = { waiting: 0, downloading: 0, success: 0, failed: 0, skipped: 0, canceled: 0 }
+  for (const task of tasks) {
+    const status = queueTaskStatus(task)
+    if (counts[status] !== undefined) counts[status]++
+  }
+  return { ...queue, tasks, total: tasks.length, counts }
+}
+
+async function fetchQueueWithAuth() {
+  const admin = await accountService.ensureAdmin()
+  const headers = admin ? { Cookie: accountService.cookie, 'X-Requested-With': 'XMLHttpRequest' } : { 'X-Requested-With': 'XMLHttpRequest' }
+  const response = await fetch(BACKEND_URL + '/music/api/downloads/queue?page=1&page_size=200', { headers })
+  const text = await response.text()
+  if (!response.ok) throw new Error(text || `HTTP ${response.status}`)
+  return { queue: JSON.parse(text), headers }
+}
+
 async function getDownloads() {
   try {
-    const [queue, records] = await Promise.all([
-      backendJson('/music/api/downloads/queue?page=1&page_size=200'),
-      backendJson('/music/api/downloads/records?page=1&page_size=100'),
-    ])
+    let { queue, headers } = await fetchQueueWithAuth()
+    const tasks = Array.isArray(queue.tasks) ? queue.tasks : []
+    const finished = tasks.filter((task) => FINISHED_QUEUE_STATUSES.has(queueTaskStatus(task)) && queueTaskId(task) > 0)
+    for (const task of finished) {
+      await fetch(`${BACKEND_URL}/music/api/downloads/queue/${queueTaskId(task)}`, { method: 'DELETE', headers }).catch(() => {})
+    }
+    if (finished.length) {
+      const refreshed = await fetchQueueWithAuth()
+      queue = refreshed.queue
+    }
+    const records = await backendJson('/music/api/downloads/records?page=1&page_size=100')
     backendAvailable = true
-    return { queue, records }
+    return { queue: recalculateQueue(queue, visibleQueueTasks(Array.isArray(queue.tasks) ? queue.tasks : [])), records }
   } catch (error) {
     backendAvailable = false
     return { error: error.message }
