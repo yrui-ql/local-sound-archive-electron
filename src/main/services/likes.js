@@ -27,6 +27,7 @@ class LikesStore {
     this.likesDir = path.join(root, 'likes')
     this.eventsPath = path.join(this.likesDir, 'events.json')
     this.lastRunPath = path.join(this.likesDir, 'last-run.json')
+    this.ignoredPath = path.join(this.likesDir, 'ignored.json')
   }
 
   async ensure() {
@@ -61,6 +62,24 @@ class LikesStore {
     cfg.updatedAt = new Date().toISOString()
     await fsp.writeFile(this.configPath, JSON.stringify(cfg, null, 2))
     return cfg
+  }
+
+  async ignoreTrack(track) {
+    await this.ensure()
+    const ignored = await this.readJson(this.ignoredPath, [])
+    const entry = {
+      path: track.path || '',
+      title: String(track.title || '').trim(),
+      artist: String(track.artist || '').trim(),
+      at: new Date().toISOString(),
+    }
+    const exists = ignored.some((item) =>
+      (entry.path && item.path === entry.path) ||
+      (item.title?.toLowerCase() === entry.title.toLowerCase() && item.artist?.toLowerCase() === entry.artist.toLowerCase())
+    )
+    if (!exists) ignored.push(entry)
+    await fsp.writeFile(this.ignoredPath, JSON.stringify(ignored.slice(-2000), null, 2))
+    return entry
   }
 
   async status() {

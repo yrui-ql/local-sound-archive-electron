@@ -664,6 +664,30 @@ async function deleteRecording(args) {
   }
 }
 
+async function deleteTrack(args) {
+  const target = path.resolve(String(args?.path || ''))
+  const allowed = musicDirs.some((root) => {
+    const resolvedRoot = path.resolve(root)
+    return target === resolvedRoot || target.startsWith(resolvedRoot + path.sep)
+  })
+  if (!allowed) return { ok: false, error: '只能删除音乐库目录内的文件' }
+  if (!AUDIO_EXTENSIONS.has(path.extname(target).toLowerCase())) return { ok: false, error: '不是支持的音频文件' }
+  if (!fs.existsSync(target)) return { ok: false, error: '文件不存在或已经移动' }
+  try {
+    await shell.trashItem(target)
+    let ignored = false
+    try {
+      if (likesStore) {
+        await likesStore.ignoreTrack({ path: target, title: String(args?.title || ''), artist: String(args?.artist || '') })
+        ignored = true
+      }
+    } catch { }
+    return { ok: true, path: target, ignored }
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+}
+
 async function saveRecording(args) {
   try {
     const ext = String(args?.ext || 'webm').replace(/[^a-z0-9]/gi, '') || 'webm'
@@ -741,6 +765,8 @@ async function handleCommand(cmd, args) {
       return listRecordings(args)
     case 'recordDelete':
       return deleteRecording(args)
+    case 'deleteTrack':
+      return deleteTrack(args)
     case 'recordStart':
       if (recordingState.active) return { ok: false, error: '正在录音' }
       await fsp.mkdir(recordingsDir(), { recursive: true }).catch(() => {})

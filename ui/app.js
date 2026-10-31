@@ -685,6 +685,7 @@ function renderLibrary() {
       else if (e.key === 'ArrowUp' && rows[i - 1]) { e.preventDefault(); rows[i - 1].focus(); selectTrack(rows[i - 1].dataset.url); }
       else if (e.key === 'Home' && rows[0]) { e.preventDefault(); rows[0].focus(); selectTrack(rows[0].dataset.url); }
       else if (e.key === 'End' && rows[rows.length - 1]) { e.preventDefault(); rows[rows.length - 1].focus(); selectTrack(rows[rows.length - 1].dataset.url); }
+      else if (e.key === 'Delete') { e.preventDefault(); deleteTrackWithConfirm(track); }
     });
     const btn = row.querySelector('[data-play]');
     if (btn) btn.addEventListener('click', (e) => {
@@ -1057,6 +1058,37 @@ $('#queueClear').addEventListener('click', () => {
 /* ---------- track context menu ---------- */
 let trackMenuTrack = null;
 let trackMenuList = null;
+async function deleteTrackWithConfirm(track) {
+  if (!track || !track.path) { toast('这个记录没有可删除的本地文件', 'err'); return; }
+  const ok = await openModal({
+    title: '删除本地文件',
+    text: '文件会移到回收站，并从音乐库移除。如果它出现在喜欢同步里，之后不会再次自动下载。',
+    confirmLabel: '移到回收站',
+    danger: true,
+  });
+  if (!ok) return;
+  const deletingCurrent = state.playing && state.playing.url === track.url;
+  if (deletingCurrent) {
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+    state.playing = null;
+    state.isPlaying = false;
+    state.playQueue = state.playQueue.filter((item) => item.url !== track.url);
+    state.queueIndex = 0;
+    updateTransport();
+    updatePlayButton();
+    updateRowPlayIcons();
+  }
+  const res = await call('deleteTrack', { path: track.path, title: track.title, artist: track.artist }).catch((error) => ({ ok: false, error: error.message }));
+  if (!res || !res.ok) { toast('删除失败：' + ((res && res.error) || '未知错误'), 'err'); return; }
+  state.recent = state.recent.filter((item) => item.path !== track.path && item.url !== track.url);
+  saveRecent();
+  toast(res.ignored ? '已移到回收站，后续喜欢同步会忽略它' : '已移到回收站', 'ok');
+  await loadLibrary();
+  if (state.page === 'recent') renderRecent();
+}
+
 function openTrackMenu(track, list, x, y) {
   if (!track) return;
   trackMenuTrack = track;
@@ -1124,6 +1156,8 @@ $('#trackMenu').addEventListener('click', async (e) => {
   else if (action === 'copy') {
     try { await navigator.clipboard.writeText((track.title || '') + ' - ' + (track.artist || '')); toast('已复制歌曲信息', 'ok'); }
     catch { toast('复制失败', 'err'); }
+  } else if (action === 'delete') {
+    await deleteTrackWithConfirm(track);
   }
 });
 document.addEventListener('click', (e) => { if (!e.target.closest('#trackMenu')) closeTrackMenu(); });

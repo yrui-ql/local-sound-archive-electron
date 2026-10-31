@@ -2767,3 +2767,5 @@ html[data-theme="green"] {
   border-color: color-mix(in srgb, var(--ui-accent, var(--accent)) 55%, transparent);
   background: color-mix(in srgb, var(--ui-accent, var(--accent)) 9%, transparent);
 }
+.track-menu-danger { color: var(--ui-danger, var(--danger)) !important; }
+.track-menu-danger .icon { color: currentColor !important; }

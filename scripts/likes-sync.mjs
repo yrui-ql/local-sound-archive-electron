@@ -30,6 +30,7 @@ const LIKES_DIR = path.join(DATA, 'likes')
 const CONFIG_PATH = path.join(DATA, 'likes-sync.json')
 const EVENTS_PATH = path.join(LIKES_DIR, 'events.json')
 const LAST_RUN_PATH = path.join(LIKES_DIR, 'last-run.json')
+const IGNORED_PATH = path.join(LIKES_DIR, 'ignored.json')
 const CRED_PATH = path.join(DATA, 'admin-credentials.txt')
 const CLIENT_CONFIG_PATH = path.join(DATA, 'config.json')
 const args = process.argv.slice(2)
@@ -193,13 +194,17 @@ async function processSource(source, cookie, cookies, config) {
   const shouldBackfill = config.backfill && (!previous || !previous.backfilled)
   if (shouldBackfill) candidates = songs.slice()
   const owned = loadOwned()
+  const ignoredRows = readJson(IGNORED_PATH, [])
+  const ignored = new Set(Array.isArray(ignoredRows) ? ignoredRows.map((item) => norm(item.artist) + '|' + norm(item.title)) : [])
   const queuedKeys = new Set()
   const toQueue = []
   let ownedSkipped = 0
+  let ignoredSkipped = 0
   for (const s of candidates) {
     // 汽水用户原声（UGC）由 soda-ugc.mjs 走专用签名下载；不要再交给普通下载器排队。
     if (s.source === 'soda' && /(创作的原声|创作原声|直播回放|原声片段)/.test(String(s.name || ''))) continue
     const key = norm(s.artist) + '|' + norm(s.name)
+    if (ignored.has(key)) { ignoredSkipped++; continue }
     if (owned.has(key) || queuedKeys.has(key)) { ownedSkipped++; continue }
     queuedKeys.add(key)
     toQueue.push(s)
@@ -236,7 +241,7 @@ async function processSource(source, cookie, cookies, config) {
     })
   }
   log(sourceLabel(source) + '：' + message)
-  return { source, status, connected: true, message, likedTotal: songs.length, newCount: toQueue.length, queued, ownedSkipped, removedCount: removedIds.length, added, removed: removedTitles.slice(0, 40), removedSongs: removedSongs.slice(0, 40), likedPlaylist: { id: liked.id, title: liked.title } }
+  return { source, status, connected: true, message, likedTotal: songs.length, newCount: toQueue.length, queued, ownedSkipped, ignoredSkipped, removedCount: removedIds.length, added, removed: removedTitles.slice(0, 40), removedSongs: removedSongs.slice(0, 40), likedPlaylist: { id: liked.id, title: liked.title } }
 }
 
 async function main() {
