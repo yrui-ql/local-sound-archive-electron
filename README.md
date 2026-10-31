@@ -1,4 +1,4 @@
-﻿# LSA · 留声
+# LSA · 留声
 
 **中文** | [English](#english)
 
@@ -26,7 +26,7 @@ LSA / 留声是一个本地优先的音乐归档与播放器。它扫描你的�
 | 在线服务 | 本机 `go-music-dl` 代理搜索、下载队列与任务操作 |
 | 账号 | 网易云 / QQ 扫码登录，汽水客户端 Cookie 读取 |
 | 喜欢同步 | 同步配置、状态、失败任务清理 |
-| 扩展 | 扩展安装/启用/禁用/移除、搜索回退、扩展 SDK |
+| 扩展 | 扩展安装/启用/禁用/移除、扩展音源搜索、本地下载入库、扩展 SDK |
 | AI 控制 | localhost HTTP API + MCP，端口可配置，占用时自动顺延 |
 | 录音 | 系统声音录制、试听、删除、分页列表 |
 | 桌面体验 | 单实例唤醒、Windows 托盘、无边框窗口、主题、界面比例 |
@@ -88,6 +88,17 @@ macOS 使用 `build/entitlements.mac.plist` 的 hardened runtime 配置。正式
 
 搜索、扫码登录和下载依赖本机运行的 `go-music-dl` 服务，默认监听 `127.0.0.1:18088`。应用不内置这个服务。
 
+### 外部音源扩展
+
+YouTube Music 通过 `extension-sdk/examples/youtube-music` 作为可选扩展接入，搜索与下载使用本机 `yt-dlp`。
+
+```text
+<data>/tools/yt-dlp.exe      # Windows
+<data>/tools/yt-dlp          # macOS / Linux
+```
+
+在「设置 → 扩展 → 从文件夹安装」选择扩展目录即可。扩展可随时禁用或移除，不影响核心客户端。
+
 ### AI 控制
 
 在设置中开启 AI control 后，应用会在 localhost 启动控制服务并提供 MCP 配置。默认端口 `18765`，可修改；被占用时自动选择下一个可用端口。令牌保存在本地数据目录。
@@ -142,7 +153,7 @@ The desktop app is built on Electron and reuses the existing HTML/CSS/JS rendere
 | Online | local `go-music-dl` proxy for search, download queue and task actions |
 | Accounts | NetEase / QQ QR login, Soda client cookie import |
 | Likes | sync configuration, status, failed-task cleanup |
-| Extensions | install/enable/disable/remove, search fallback, extension SDK |
+| Extensions | install/enable/disable/remove, extension source search, local download import, extension SDK |
 | AI control | localhost HTTP API + MCP, configurable port with automatic fallback |
 | Recording | system-audio recording, playback, delete, paginated list |
 | Desktop | single-instance wake-up, Windows tray, frameless window, themes, UI scale |
@@ -204,6 +215,17 @@ The macOS build uses the hardened-runtime entitlements in `build/entitlements.ma
 
 Search, QR login and downloads require a local `go-music-dl` service on `127.0.0.1:18088`. The app does not bundle it.
 
+### External source extension
+
+YouTube Music is available as an optional extension in `extension-sdk/examples/youtube-music`. It uses a local `yt-dlp` binary for search and resolution.
+
+```text
+<data>/tools/yt-dlp.exe      # Windows
+<data>/tools/yt-dlp          # macOS / Linux
+```
+
+Install it from Settings → Extensions → Install from folder. The extension can be disabled or removed without affecting the core client.
+
 ### AI control
 
 Enable AI control in Settings to start a localhost control server and generate MCP configuration. The default port is `18765`; it can be changed and automatically falls back when occupied. The token stays in the local data directory.
@@ -237,4 +259,5 @@ Source, configuration, README and the launcher must pass `privacy-audit`. The of
 ### License
 
 MIT
+
 

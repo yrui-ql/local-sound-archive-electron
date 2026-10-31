@@ -6,13 +6,13 @@ class ExtensionHost {
     this.store = store
   }
 
-  call(dir, manifest, method, params = {}) {
+  call(dir, manifest, method, params = {}, timeoutMs = 5000) {
     return new Promise((resolve) => {
       const entry = path.join(dir, manifest.entry || 'index.mjs')
       const child = spawn(process.execPath, [entry], {
         cwd: dir,
         windowsHide: true,
-        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', LSA_EXTENSION_DIR: dir, LSA_DATA_DIR: process.env.LSA_DATA_DIR || '' },
         stdio: ['pipe', 'pipe', 'pipe'],
       })
       let buffer = ''
@@ -23,7 +23,7 @@ class ExtensionHost {
         try { child.kill() } catch { }
         resolve(value)
       }
-      const timer = setTimeout(() => finish({ ok: false, error: '扩展响应超时' }), 5000)
+      const timer = setTimeout(() => finish({ ok: false, error: '扩展响应超时' }), timeoutMs)
       child.stdout.on('data', (chunk) => {
         buffer += chunk.toString()
         for (const line of buffer.split('\n')) {
@@ -49,12 +49,26 @@ class ExtensionHost {
     const errors = []
     const extensions = await this.store.enabled()
     for (const extension of extensions) {
-      const response = await this.call(extension.dir, extension.manifest, 'search', { query })
+      const response = await this.call(extension.dir, extension.manifest, 'search', { query, limit: 15 }, 30000)
       if (!response.ok) { errors.push(extension.manifest.name + ': ' + response.error); continue }
       const list = response.result?.songs || []
-      for (const song of list) songs.push({ ...song, source: song.source || extension.manifest.id })
+      for (const song of list) songs.push({
+        ...song,
+        name: song.name || song.title || '未知歌曲',
+        artist: song.artist || '未知歌手',
+        source: song.source || extension.manifest.id,
+        extensionId: extension.manifest.id,
+      })
     }
     return { songs, count: songs.length, errors }
+  }
+
+  async resolve(extensionId, song, outputDir) {
+    const extension = (await this.store.enabled()).find((item) => item.manifest.id === extensionId)
+    if (!extension) return { ok: false, error: '扩展未启用：' + extensionId }
+    const response = await this.call(extension.dir, extension.manifest, 'resolve', { song, outputDir }, 15 * 60 * 1000)
+    if (!response.ok) return response
+    return { ok: true, result: response.result }
   }
 }
 

@@ -291,6 +291,12 @@ if (webview) webview.addEventListener('message', (event) => {
   if (!msg || typeof msg !== 'object') return;
   if (msg.type === 'progress') { setProgress(String(msg.data || '')); return; }
   if (msg.type === 'likes') { handleLikesEvent(msg.data || {}); return; }
+  if (msg.type === 'library-changed') { loadLibrary().catch(() => {}); return; }
+  if (msg.type === 'extension-download') {
+    if (msg.status === 'success') toast('扩展下载完成：' + (msg.name || '未知歌曲'), 'ok');
+    else if (msg.status === 'error') toast('扩展下载失败：' + (msg.error || '未知错误'), 'err');
+    return;
+  }
   if (msg.type === 'ai-command') {
     handleAiCommand(String(msg.action || ''), msg.args || {}).then((result) => {
       call('aiResult', { requestId: msg.id, result }).catch(() => {});
@@ -345,7 +351,7 @@ function artMarkup(name, sub, cover, extraClass = '') {
     '</div>';
 }
 function sourceLabel(source) {
-  return ({ netease: '网易云', qq: 'QQ', soda: '汽水', kugou: '酷狗', kuwo: '酷我', migu: '咪咕', bilibili: 'B站', qianqian: '千千', joox: 'JOOX', apple: 'Apple', jamendo: 'Jamendo', fivesing: '5sing' })[source] || (source || '在线');
+  return ({ netease: '网易云', qq: 'QQ', soda: '汽水', kugou: '酷狗', kuwo: '酷我', migu: '咪咕', bilibili: 'B站', qianqian: '千千', joox: 'JOOX', apple: 'Apple', jamendo: 'Jamendo', fivesing: '5sing', 'youtube-music': 'YouTube Music', soundcloud: 'SoundCloud', bandcamp: 'Bandcamp', spotify: 'Spotify' })[source] || (source || '在线');
 }
 function statusLabel(status) {
   return ({ waiting: '等待', downloading: '下载中', success: '成功', failed: '失败', skipped: '跳过', canceled: '已取消' })[status] || status || '未知';
@@ -2102,9 +2108,10 @@ async function doSearch() {
     const data = await call('search', { query: q });
     state.search = data.songs || [];
     renderSearch();
+    const extensionErrors = Array.isArray(data.errors) ? data.errors.filter(Boolean) : [];
     $('#searchHint').textContent = state.search.length
-      ? '共 ' + state.search.length + ' 条结果。勾选后批量下载，或点单行下载。'
-      : '没有结果。试试更短的关键词，或先在设置里登录平台账号。';
+      ? '共 ' + state.search.length + ' 条结果。勾选后批量下载，或点单行下载。' + (extensionErrors.length ? ' 部分来源不可用：' + extensionErrors.join('；') : '')
+      : '没有结果。试试更短的关键词，或先在设置里登录平台账号。' + (extensionErrors.length ? ' 来源错误：' + extensionErrors.join('；') : '');
   } catch (err) {
     $('#searchSkeleton').classList.add('hidden');
     $('#searchHint').textContent = '搜索失败：' + err.message;
@@ -2200,7 +2207,10 @@ async function loadDownloads(showSkeleton = false) {
   }
   try {
     const data = await call('getDownloads');
-    if (data && data.error) throw new Error(data.error);
+    if (data && data.error) {
+      state.downloads = data;
+      throw new Error(data.error);
+    }
     state.downloads = data;
     state.downloadsError = null;
     renderDownloads();
@@ -2228,9 +2238,23 @@ function progressInfo(q) {
   const active = (c.waiting || 0) + (c.downloading || 0);
   return { c, total, finished, active, percent: total ? Math.min(100, Math.round((finished / total) * 100)) : 0 };
 }
+function renderExtensionDownloads(jobs) {
+  if (!Array.isArray(jobs) || !jobs.length) return '';
+  return '<div class="extension-downloads"><div class="panel-head"><div><h2>扩展下载</h2><p>YouTube Music / 外部音源</p></div></div>' +
+    jobs.map((job) => {
+      const status = job.status === 'error' ? 'failed' : job.status;
+      return '<div class="download-item"><div class="download-main"><div class="download-title" title="' + esc(job.name) + '">' + esc(job.name || '未知歌曲') + '</div><div class="download-sub' + (job.status === 'error' ? ' error' : '') + '" title="' + esc(job.error || job.path || '') + '">' + esc(job.artist || '未知歌手') + ' · ' + esc(sourceLabel(job.source)) + (job.error ? ' · ' + esc(job.error) : '') + '</div></div><span class="status-pill ' + statusClass(status) + '">' + statusLabel(status) + '</span></div>';
+    }).join('') + '</div>';
+}
 function renderDownloads() {
   const data = state.downloads;
   if (state.downloadsError && (!data || !data.queue)) {
+    const extensionHtml = renderExtensionDownloads(data && data.extensionJobs);
+    if (extensionHtml) {
+      $('#downloadsSub').textContent = '内置下载服务不可用，扩展下载仍可用';
+      $('#downloadsBody').innerHTML = extensionHtml;
+      return;
+    }
     $('#downloadsSub').textContent = '无法读取下载服务';
     $('#downloadsBody').innerHTML = emptyState('info', '下载服务不可用', state.downloadsError, '<button class="btn ghost small" data-retry-downloads>重试</button>');
     const retry = $('#downloadsBody [data-retry-downloads]');
@@ -2242,6 +2266,7 @@ function renderDownloads() {
     return;
   }
   const q = data.queue;
+  const extensionHtml = renderExtensionDownloads(data.extensionJobs);
   const p = progressInfo(q);
   $('#dlWaiting').textContent = String(p.c.waiting || 0);
   $('#dlDownloading').textContent = String(p.c.downloading || 0);
@@ -2253,10 +2278,10 @@ function renderDownloads() {
   if (state.downloadTab === 'records') {
     const records = (data.records && data.records.records) || [];
     if (!records.length) {
-      $('#downloadsBody').innerHTML = emptyState('queue', '还没有下载记录', '完成一次下载后，这里会显示结果。');
+      $('#downloadsBody').innerHTML = extensionHtml || emptyState('queue', '还没有下载记录', '完成一次下载后，这里会显示结果。');
       return;
     }
-    $('#downloadsBody').innerHTML = records.map((r) => '<div class="record-line"><span class="name" title="' + esc(r.Name) + '">' + esc(r.Name || '未知歌曲') + ' <span class="cell-muted">' + esc(r.Artist || '') + '</span></span><span class="meta"><span class="status-pill ' + statusClass(r.Status) + '">' + statusLabel(r.Status) + '</span></span></div>').join('');
+    $('#downloadsBody').innerHTML = extensionHtml + records.map((r) => '<div class="record-line"><span class="name" title="' + esc(r.Name) + '">' + esc(r.Name || '未知歌曲') + ' <span class="cell-muted">' + esc(r.Artist || '') + '</span></span><span class="meta"><span class="status-pill ' + statusClass(r.Status) + '">' + statusLabel(r.Status) + '</span></span></div>').join('');
     return;
   }
   const tasks = (q.tasks || []).slice().sort((a, b) => {
@@ -2264,12 +2289,12 @@ function renderDownloads() {
     return (order[a.Status] ?? 9) - (order[b.Status] ?? 9);
   });
   if (!tasks.length) {
-    $('#downloadsBody').innerHTML = emptyState('download', '没有等待中的任务', '在搜索页选择歌曲后，会出现在这里。', '<button class="btn primary small" data-go-search>去搜索</button>');
+    $('#downloadsBody').innerHTML = extensionHtml || emptyState('download', '没有等待中的任务', '在搜索页选择歌曲后，会出现在这里。', '<button class="btn primary small" data-go-search>去搜索</button>');
     const go = $('#downloadsBody [data-go-search]');
     if (go) go.addEventListener('click', () => showPage('search'));
     return;
   }
-  $('#downloadsBody').innerHTML = tasks.map((t) => {
+  $('#downloadsBody').innerHTML = extensionHtml + tasks.map((t) => {
     const action = t.Status === 'waiting' ? '<button class="btn ghost" data-dlaction="cancel" data-id="' + esc(t.ID) + '">取消</button>'
       : t.Status === 'failed' ? '<button class="btn ghost" data-dlaction="retry" data-id="' + esc(t.ID) + '">重试</button>' : '';
     return '<div class="download-item"><div class="download-main"><div class="download-title" title="' + esc(t.Name) + '">' + esc(t.Name || '未知歌曲') + '</div><div class="download-sub' + (t.Status === 'failed' ? ' error' : '') + '" title="' + esc(t.Error || t.Path || '') + '">' + esc(t.Artist || '未知歌手') + ' · ' + esc(sourceLabel(t.Source)) + (t.Error ? ' · ' + esc(t.Error) : '') + '</div></div><span class="status-pill ' + statusClass(t.Status) + '">' + statusLabel(t.Status) + '</span><div class="download-actions">' + action + '</div></div>';

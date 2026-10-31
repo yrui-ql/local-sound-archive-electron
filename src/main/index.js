@@ -341,6 +341,10 @@ async function fetchQueueWithAuth() {
   return { queue: JSON.parse(text), headers }
 }
 
+function extensionDownloadJobs() {
+  return Array.from(localDownloads.values()).slice(-100).reverse()
+}
+
 async function getDownloads() {
   try {
     let { queue, headers } = await fetchQueueWithAuth()
@@ -355,14 +359,14 @@ async function getDownloads() {
     }
     const records = await backendJson('/music/api/downloads/records?page=1&page_size=100')
     backendAvailable = true
-    return { queue: recalculateQueue(queue, visibleQueueTasks(Array.isArray(queue.tasks) ? queue.tasks : [])), records }
+    return { queue: recalculateQueue(queue, visibleQueueTasks(Array.isArray(queue.tasks) ? queue.tasks : [])), records, extensionJobs: extensionDownloadJobs() }
   } catch (error) {
     backendAvailable = false
-    return { error: error.message }
+    return { error: error.message, extensionJobs: extensionDownloadJobs() }
   }
 }
 
-async function queueDownloads(songs) {
+async function queueBackendDownloads(songs) {
   if (!Array.isArray(songs) || !songs.length) return { ok: false, error: '没有选择歌曲' }
   const payload = {
     request_id: crypto.randomUUID(),
@@ -386,6 +390,22 @@ async function queueDownloads(songs) {
   if (!response.ok) return { ok: false, error: text }
   backendAvailable = true
   return { ok: true, queued: payload.songs.length }
+}
+
+async function queueDownloads(songs) {
+  if (!Array.isArray(songs) || !songs.length) return { ok: false, error: '没有选择歌曲' }
+  const extensionSongs = songs.filter((song) => song.extensionId)
+  const backendSongs = songs.filter((song) => !song.extensionId)
+  let backendResult = { ok: true, queued: 0 }
+  if (backendSongs.length) backendResult = await queueBackendDownloads(backendSongs)
+  if (extensionSongs.length) startExtensionDownloads(extensionSongs)
+  if (!backendResult.ok && !extensionSongs.length) return backendResult
+  return {
+    ok: true,
+    queued: (backendResult.queued || 0) + extensionSongs.length,
+    extensionQueued: extensionSongs.length,
+    backendQueued: backendResult.queued || 0,
+  }
 }
 
 async function downloadAction(args) {
@@ -751,12 +771,26 @@ async function handleCommand(cmd, args) {
     case 'getDownloads':
       return getDownloads()
     case 'search': {
-      let result = null
-      try { result = await searchBackend(args?.query) } catch { }
-      if (result && result.songs && result.songs.length) return result
-      const fallback = await extensionHost.search(String(args?.query || ''))
-      return { songs: fallback.songs, count: fallback.songs.length, errors: fallback.errors }
+      const query = String(args?.query || '')
+      let result = { songs: [], count: 0, errors: [] }
+      try {
+        const backend = await searchBackend(query)
+        result.songs.push(...(backend.songs || []))
+      } catch (error) {
+        result.errors.push('内置音源：' + error.message)
+      }
+      try {
+        const extensions = await extensionHost.search(query)
+        result.songs.push(...(extensions.songs || []))
+        result.errors.push(...(extensions.errors || []))
+      } catch (error) {
+        result.errors.push('扩展音源：' + error.message)
+      }
+      result.count = result.songs.length
+      return result
     }
+    case 'extensionDownloads':
+      return getExtensionDownloads()
     case 'download':
       return queueDownloads(args?.songs)
     case 'downloadAction':
@@ -1123,3 +1157,70 @@ app.on('before-quit', () => {
 
 
 
+let libraryRefreshPromise = null;
+const localDownloads = new Map();
+function safeFileName(value) {
+  return String(value || '未命名').replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 160) || '未命名';
+}
+function extensionDownloadDir() {
+  if (!musicDirs.length) return null;
+  return path.join(musicDirs[0], 'LSA Downloads');
+}
+async function refreshLibrarySoon() {
+  if (libraryRefreshPromise) return libraryRefreshPromise;
+  libraryRefreshPromise = buildLibrary().finally(() => { libraryRefreshPromise = null; });
+  return libraryRefreshPromise;
+}
+async function downloadExtensionSong(song) {
+  const job = {
+    id: crypto.randomUUID(),
+    name: song.name || '未知歌曲',
+    artist: song.artist || '',
+    source: song.extensionId || song.source || 'extension',
+    status: 'downloading',
+    error: '',
+    at: new Date().toISOString(),
+  };
+  localDownloads.set(job.id, job);
+  postHostEvent('extension-download', { id: job.id, status: 'downloading', name: job.name });
+  const staging = path.join(DATA_DIR, 'downloads', 'staging', job.id);
+  try {
+    await fsp.mkdir(staging, { recursive: true });
+    const resolved = await extensionHost.resolve(song.extensionId, song, staging);
+    if (!resolved.ok) throw new Error(resolved.error || resolved.result?.error || '扩展没有返回下载结果');
+    const result = resolved.result || {};
+    const sourceFile = path.resolve(String(result.file || ''));
+    if (!sourceFile.startsWith(path.resolve(staging) + path.sep) || !fs.existsSync(sourceFile)) throw new Error('扩展返回的下载文件无效');
+    const targetDir = extensionDownloadDir();
+    if (!targetDir) throw new Error('没有配置音乐库目录');
+    await fsp.mkdir(targetDir, { recursive: true });
+    const ext = path.extname(sourceFile).toLowerCase();
+    const title = safeFileName(result.title || job.name);
+    const artist = safeFileName(result.artist || job.artist);
+    const base = (artist ? artist + ' - ' : '') + title;
+    let target = path.join(targetDir, base + ext);
+    let suffix = 1;
+    while (fs.existsSync(target)) target = path.join(targetDir, base + ' (' + (++suffix) + ')' + ext);
+    try { await fsp.rename(sourceFile, target); }
+    catch { await fsp.copyFile(sourceFile, target); await fsp.unlink(sourceFile).catch(() => {}); }
+    await fsp.rm(staging, { recursive: true, force: true }).catch(() => {});
+    job.status = 'success';
+    job.path = target;
+    postHostEvent('extension-download', { id: job.id, status: 'success', name: job.name, path: target });
+    await refreshLibrarySoon();
+    postHostEvent('library-changed', { reason: 'extension-download' });
+    return job;
+  } catch (error) {
+    job.status = 'error';
+    job.error = error.message;
+    await fsp.rm(staging, { recursive: true, force: true }).catch(() => {});
+    postHostEvent('extension-download', { id: job.id, status: 'error', name: job.name, error: error.message });
+    return job;
+  }
+}
+function startExtensionDownloads(songs) {
+  for (const song of songs) downloadExtensionSong(song).catch(() => {});
+}
+async function getExtensionDownloads() {
+  return { jobs: Array.from(localDownloads.values()).slice(-100).reverse() };
+}

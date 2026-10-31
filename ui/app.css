@@ -2797,3 +2797,7 @@ html[data-theme="green"] {
   100% { background: transparent; }
 }
 #btnLocatePlaying:disabled { opacity: .42; cursor: default; }
+.extension-downloads { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--ui-line, var(--line)); }
+.extension-downloads .panel-head { margin-bottom: 6px; }
+.extension-downloads .panel-head h2 { font-size: 13px; }
+.extension-downloads .panel-head p { font-size: 10px; }

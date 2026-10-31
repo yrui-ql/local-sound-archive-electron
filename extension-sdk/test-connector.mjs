@@ -50,7 +50,7 @@ rl.on('line', (line) => {
 function call(method, params = {}) {
   return new Promise((resolve, reject) => {
     const id = nextId++
-    const timer = setTimeout(() => { pending.delete(id); reject(new Error(method + ' 超时')) }, 5000)
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error(method + ' 超时')) }, 30000)
     pending.set(id, (message) => { clearTimeout(timer); resolve(message) })
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n')
   })
@@ -79,4 +79,5 @@ try {
   child.stdin.end()
   setTimeout(() => { try { child.kill() } catch { } }, 60)
 }
+
 

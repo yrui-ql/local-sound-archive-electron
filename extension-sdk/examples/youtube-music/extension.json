@@ -1,0 +1,11 @@
+{
+  "id": "youtube-music",
+  "name": "YouTube Music",
+  "version": "0.1.0",
+  "description": "YouTube Music 搜索与音频下载（使用本机 yt-dlp）",
+  "runtime": "node",
+  "entry": "index.mjs",
+  "kind": "source",
+  "capabilities": ["search", "resolve", "health"],
+  "permissions": ["network", "cache"]
+}
