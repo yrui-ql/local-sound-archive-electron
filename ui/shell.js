@@ -1,4 +1,4 @@
-const desktop = window.lsaDesktop
+﻿const desktop = window.lsaDesktop
 
 if (desktop) {
   document.body.classList.add('platform-' + desktop.platform)
@@ -36,7 +36,7 @@ if (drag && desktop) {
 }
 // Hide scrollbars until the user actually scrolls a panel.
 (() => {
-  const selector = '.main,.sidebar,.account-card,.fx-body,.queue-list,.lyrics-list,.search-results,.settings-main'
+  const selector = '.main,.sidebar,.account-card,.fx-body,.queue-list,.lyrics-list,.lib-list,.search-results,.settings-main'
   const timers = new WeakMap()
   document.addEventListener('scroll', (event) => {
     const target = event.target
@@ -118,7 +118,7 @@ if (recordHost && recordHost.addEventListener) {
 }
 /* Overlay scroll indicator: no native rails, only motion feedback. */
 (() => {
-  const selector = '.main,.sidebar,.account-card,.fx-body,.queue-list,.lyrics-list,.search-results,.settings-main'
+  const selector = '.main,.sidebar,.account-card,.fx-body,.queue-list,.lyrics-list,.lib-list,.search-results,.settings-main'
   const thumb = document.createElement('div')
   thumb.id = 'lsa-scroll-thumb'
   document.body.appendChild(thumb)
@@ -161,3 +161,4 @@ if (recordHost && recordHost.addEventListener) {
     else hide()
   }, { passive: true })
 })()
+

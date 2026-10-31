@@ -474,6 +474,8 @@ function showPage(name) {
   if (sel) sel.removeAllRanges();
   const main = $('#main');
   if (main) main.scrollTop = 0;
+  const libList = $('#libList');
+  if (libList) libList.scrollTop = 0;
   closeInfo();
   if (name === 'search') setTimeout(() => $('#searchInput').focus(), 40);
   if (name === 'record') loadRecordings();
@@ -668,11 +670,12 @@ function loadMoreLibrary() {
   renderLibrary();
   requestAnimationFrame(() => { libAutoLoading = false; });
 }
-const libScrollRoot = document.querySelector('.main');
-const libFootObserver = new IntersectionObserver((entries) => {
-  if (entries.some((entry) => entry.isIntersecting)) loadMoreLibrary();
-}, { root: libScrollRoot, rootMargin: '0px 0px 520px 0px', threshold: 0 });
-libFootObserver.observe($('#libFoot'));
+const libScrollRoot = document.querySelector('#libList');
+if (libScrollRoot) {
+  libScrollRoot.addEventListener('scroll', () => {
+    if (libScrollRoot.scrollTop + libScrollRoot.clientHeight >= libScrollRoot.scrollHeight - 520) loadMoreLibrary();
+  }, { passive: true });
+}
 function skeletonRows(n) {
   return Array.from({ length: n }, () => '<div class="skeleton-row"><div class="sk sk-art"></div><div class="sk-lines"><div class="sk sk-line w60"></div><div class="sk sk-line w30"></div></div><div class="sk sk-line" style="width:18%"></div><div class="sk sk-line" style="width:9%"></div></div>').join('');
 }
@@ -3001,6 +3004,7 @@ document.addEventListener('keydown', (e) => {
   setInterval(async () => { await pollRecord(); renderRecord(); }, 1000);
   renderRecord();
 })();
+
 
 
 

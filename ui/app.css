@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #080a0d;
   --bg-2: #0c0f14;
   --surface: #11161d;
@@ -2401,32 +2401,32 @@ summary:focus-visible { outline: 2px solid var(--ui-accent, var(--accent)); outl
 }
 
 /* Scrollbars are transient: no permanent rails in panels, modals or lists. */
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .search-results, .settings-main) {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main) {
   scrollbar-width: none;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .search-results, .settings-main)::-webkit-scrollbar {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main)::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .search-results, .settings-main).is-scrolling {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main).is-scrolling {
   scrollbar-width: thin;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .search-results, .settings-main).is-scrolling::-webkit-scrollbar {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main).is-scrolling::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .search-results, .settings-main).is-scrolling::-webkit-scrollbar-thumb {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main).is-scrolling::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--ui-muted, var(--muted)) 48%, transparent);
   border-radius: 99px;
 }
 
 /* Native scroll rails are never shown. A slim indicator appears only while scrolling. */
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .search-results, .settings-main)::-webkit-scrollbar {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main)::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
 }
-:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .search-results, .settings-main) {
+:where(.main, .sidebar, .account-card, .fx-body, .queue-list, .lyrics-list, .lib-list, .search-results, .settings-main) {
   scrollbar-width: none !important;
   -ms-overflow-style: none;
 }
@@ -2499,3 +2499,42 @@ summary:focus-visible { outline: 2px solid var(--ui-accent, var(--accent)); outl
 }
 .port-input:hover { border-color: var(--line-strong); }
 .port-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Library is a fixed header + one scrolling list, not a whole-page scroll. */
+#page-library.active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+#page-library .page-head,
+#page-library .library-summary {
+  flex: none;
+}
+#page-library .library-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+#page-library .toolbar,
+#page-library .table-head,
+#page-library .list-foot {
+  flex: none;
+}
+#page-library .lib-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* Other pages keep the title visible while their content scrolls. */
+.page > .page-head {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--ui-bg, var(--bg));
+  padding-top: 4px;
+}
+

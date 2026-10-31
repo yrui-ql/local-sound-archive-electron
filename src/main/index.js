@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session, Tray, Menu, nativeImage } = require('electron')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const http = require('node:http')
@@ -13,6 +13,13 @@ const { AccountService } = require('./services/account')
 
 const isMac = process.platform === 'darwin'
 app.setAppUserModelId('com.local-sound-archive.app')
+
+// One process per user session. A second launch should wake the existing window.
+const singleInstance = app.requestSingleInstanceLock()
+if (!singleInstance) app.exit(0)
+
+let tray = null
+let forceQuit = false
 
 const AUDIO_EXTENSIONS = new Set(['.flac', '.mp3', '.m4a', '.aac', '.wav', '.ogg', '.opus', '.wma'])
 const APP_ROOT = path.join(__dirname, '..', '..')
@@ -870,6 +877,30 @@ async function handleCommand(cmd, args) {
   }
 }
 
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow().catch((error) => logStart('recreate-window:error ' + error.stack))
+    return
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+}
+
+function createTray() {
+  if (tray) return
+  const icon = nativeImage.createFromPath(path.join(APP_ROOT, 'build', 'icon.png'))
+  tray = new Tray(icon)
+  tray.setToolTip('留声 · LSA')
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: '显示留声', click: showMainWindow },
+    { label: '隐藏到托盘', click: () => { if (mainWindow) mainWindow.hide() } },
+    { type: 'separator' },
+    { label: '退出留声', click: () => { forceQuit = true; app.quit() } },
+  ]))
+  tray.on('double-click', showMainWindow)
+}
+
 async function createWindow() {
   logStart('createWindow:start')
   mainWindow = new BrowserWindow({
@@ -890,6 +921,14 @@ async function createWindow() {
       sandbox: true,
     },
   })
+
+  mainWindow.on('close', (event) => {
+    if (!isMac && !forceQuit) {
+      event.preventDefault()
+      mainWindow.hide()
+    }
+  })
+  mainWindow.on('closed', () => { mainWindow = null })
 
   mainWindow.once('ready-to-show', () => { logStart('ready-to-show'); mainWindow.show() })
   try { await mainWindow.loadFile(path.join(RENDERER, 'index.html')); logStart('loadFile:ok') } catch (error) { logStart('loadFile:error ' + error.stack) ; throw error }
@@ -981,22 +1020,25 @@ app.whenReady().then(async () => {
   await loadAiConfig()
   await startAudioServer()
   await createWindow()
+  createTray()
   if (aiConfig.enabled) await startAiServer()
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+  app.on('activate', showMainWindow)
 })
+
+app.on('second-instance', showMainWindow)
 
 app.on('window-all-closed', () => {
   if (!isMac) app.quit()
 })
 
 app.on('before-quit', () => {
+  forceQuit = true
   stopAiServer()
   if (audioServer) {
     try { audioServer.close() } catch { }
   }
 })
+
 
 
 

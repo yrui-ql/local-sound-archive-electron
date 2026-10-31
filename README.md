@@ -1,4 +1,4 @@
-# LSA · 留声
+﻿# LSA · 留声
 
 跨平台、本地优先的音乐归档与播放器。  
 A local-first music archive and player for Windows and macOS.
@@ -15,7 +15,7 @@ Electron 版本是原 Windows 客户端的跨平台宿主：保留原有 HTML/CS
 
 - 本地音乐库扫描与 SQLite 索引；
 - FLAC / MP3 / M4A / 歌词播放；
-- 自定义无边框窗口与完整窗口控制；
+- 自定义无边框窗口与完整窗口控制；\n- 单实例唤醒与 Windows 托盘后台；
 - 本地 HTTP 音频服务，支持 Range；
 - 搜索、下载队列与任务操作；
 - 网易云 / QQ 扫码登录，汽水客户端 Cookie 读取；
@@ -113,3 +113,4 @@ docs/                   架构、工作流、ADR 与截图
 ## License
 
 MIT
+
