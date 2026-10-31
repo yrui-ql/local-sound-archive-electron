@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 /* ---------- tiny utils ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -86,11 +86,12 @@ function loadPlayerPrefs() {
 
 /* ---------- appearance theme ---------- */
 const THEME_KEY = 'musicArchiveTheme';
-const THEME_MODES = ['vinyl', 'paper', 'celadon', 'ocean', 'cherry', 'system'];
+const THEME_MODES = ['vinyl', 'paper', 'celadon', 'green', 'ocean', 'cherry', 'system'];
 const THEME_META = {
   vinyl: { label: '黑胶', tone: '深色' },
   paper: { label: '纸页', tone: '浅色' },
   celadon: { label: '青瓷', tone: '深色' },
+  green: { label: '青绿', tone: '深色' },
   ocean: { label: '夜蓝', tone: '深色' },
   cherry: { label: '樱桃', tone: '深色' },
   system: { label: '跟随系统', tone: '' },
