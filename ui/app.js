@@ -2752,12 +2752,12 @@ async function loadAgents() {
   list.innerHTML = state.agents.map((agent) => '<div class="agent-item' + (agent.found ? '' : ' missing') + '">' +
     '<div class="agent-main"><strong>' + esc(agent.name) + '</strong><small>' + esc(agent.found ? (agent.path || agent.command) : '未检测到 ' + agent.command) + '</small>' +
     (agent.version ? '<p>' + esc(agent.version) + '</p>' : '') + '</div>' +
-    (agent.found ? '<button class="btn ghost small" data-agent-launch="' + esc(agent.id) + '">打开工作区</button>' : '<span class="badge">未安装</span>') +
+    (agent.found ? '<button class="btn ghost small" data-agent-launch="' + esc(agent.id) + '">' + (agent.kind === 'gui' ? '打开应用' : '开始对话') + '</button>' : '<span class="badge">未安装</span>') +
     '</div>').join('');
   list.querySelectorAll('[data-agent-launch]').forEach((button) => {
     button.addEventListener('click', async () => {
       const res = await call('launchAgent', { id: button.dataset.agentLaunch }).catch(() => null);
-      if (res && res.ok) toast('已打开工作区：' + res.workspace, 'ok');
+      if (res && res.ok) toast('已启动：' + (res.agent || '开发工具'), 'ok');
       else toast('启动失败：' + ((res && res.error) || '未知错误'), 'err');
     });
   });

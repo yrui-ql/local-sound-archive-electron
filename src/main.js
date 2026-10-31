@@ -4,6 +4,7 @@ const fsp = require('node:fs/promises')
 const http = require('node:http')
 const crypto = require('node:crypto')
 const path = require('node:path')
+const { spawn } = require('node:child_process')
 const { LibraryStore } = require('./library')
 const { ExtensionStore } = require('./extensions')
 const { ExtensionHost } = require('./extension-host')
@@ -453,22 +454,52 @@ async function openSdkDoc(file) {
 
 function detectAgents() {
   const candidates = [
-    { id: 'codex', name: 'Codex', command: 'codex' },
-    { id: 'claude', name: 'Claude Code', command: 'claude' },
-    { id: 'dsh', name: 'DSH', command: 'dsh' },
+    { id: 'codex', name: 'Codex', command: 'codex', kind: 'cli' },
+    { id: 'claude', name: 'Claude Code', command: 'claude', kind: 'cli' },
+    { id: 'dsh', name: 'DSH', command: 'dsh', kind: 'cli', env: 'DSH_CLI' },
+    { id: 'cursor', name: 'Cursor', command: 'cursor', kind: 'gui' },
   ]
+  const pathDirs = String(process.env.PATH || '').split(path.delimiter).filter(Boolean)
   return {
     agents: candidates.map((agent) => {
       const candidatesPath = []
-      for (const dir of String(process.env.PATH || '').split(path.delimiter)) {
-        if (!dir) continue
+      const envPath = agent.env ? process.env[agent.env] : ''
+      if (envPath) candidatesPath.push(envPath)
+      for (const dir of pathDirs) {
         candidatesPath.push(path.join(dir, process.platform === 'win32' ? agent.command + '.cmd' : agent.command))
         candidatesPath.push(path.join(dir, process.platform === 'win32' ? agent.command + '.exe' : agent.command))
       }
-      const found = candidatesPath.find((candidate) => fs.existsSync(candidate)) || ''
+      if (agent.id === 'cursor' && process.platform === 'win32') {
+        candidatesPath.push(path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Cursor', 'Cursor.exe'))
+        candidatesPath.push(path.join(APP_ROOT, '..', '..', '01_ENV', '20_ai', 'cursor', 'app', 'Cursor.exe'))
+      }
+      const found = candidatesPath.find((candidate) => candidate && fs.existsSync(candidate)) || ''
       return { ...agent, found: !!found, path: found }
     }),
   }
+}
+
+function startAgentConversation(agent, workspace) {
+  const quote = (value) => String(value).replace(/'/g, "''")
+  if (agent.kind === 'gui') {
+    const child = spawn(agent.path, [workspace], { detached: true, stdio: 'ignore', windowsHide: false })
+    child.unref()
+    return
+  }
+  if (process.platform === 'win32') {
+    const script = `$Host.UI.RawUI.WindowTitle = 'LSA · ${quote(agent.name)}'; Set-Location -LiteralPath '${quote(workspace)}'; & '${quote(agent.path)}'`
+    const child = spawn('powershell.exe', ['-NoExit', '-Command', script], { detached: true, stdio: 'ignore', windowsHide: false })
+    child.unref()
+    return
+  }
+  if (process.platform === 'darwin') {
+    const script = `cd '${quote(workspace)}' && '${quote(agent.path)}'`
+    const child = spawn('osascript', ['-e', `tell application "Terminal" to do script "${script.replace(/"/g, '\\"')}"`], { detached: true, stdio: 'ignore' })
+    child.unref()
+    return
+  }
+  const child = spawn('x-terminal-emulator', ['-e', agent.path], { cwd: workspace, detached: true, stdio: 'ignore' })
+  child.unref()
 }
 
 async function openLikesReport() {
@@ -534,8 +565,10 @@ async function handleCommand(cmd, args) {
       if (!id) return { ok: false, error: '缺少开发工具 id' }
       const workspace = path.join(DATA_DIR, 'agent-workspaces', id)
       await fsp.mkdir(workspace, { recursive: true })
-      const error = await shell.openPath(workspace)
-      return error ? { ok: false, error } : { ok: true, workspace }
+      const agent = detectAgents().agents.find((item) => item.id === id)
+      if (!agent || !agent.found) return { ok: false, error: '没有检测到 ' + id }
+      startAgentConversation(agent, workspace)
+      return { ok: true, workspace, launched: agent.kind === 'gui' ? 'app' : 'terminal', agent: agent.name }
     }
     case 'openExtensionDocs':
       return openSdkDoc('EXTENSIONS.md')
@@ -750,6 +783,8 @@ app.on('before-quit', () => {
     try { audioServer.close() } catch { }
   }
 })
+
+
 
 
 
