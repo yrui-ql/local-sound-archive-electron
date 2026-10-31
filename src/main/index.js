@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session, Tray, Menu, nativeImage } = require('electron')
+﻿const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session, Tray, Menu, nativeImage } = require('electron')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const http = require('node:http')
@@ -27,7 +27,7 @@ if (!singleInstance) app.exit(0)
 let tray = null
 let forceQuit = false
 
-const AUDIO_EXTENSIONS = new Set(['.flac', '.mp3', '.m4a', '.aac', '.wav', '.ogg', '.opus', '.wma'])
+const AUDIO_EXTENSIONS = new Set(['.flac', '.mp3', '.m4a', '.m4b', '.aac', '.wav', '.ogg', '.opus', '.wma'])
 const APP_ROOT = path.join(__dirname, '..', '..')
 const RENDERER = path.join(APP_ROOT, 'ui')
 const DATA_DIR = process.env.LSA_DATA_DIR
@@ -1278,6 +1278,7 @@ async function getSources() {
   const data = await extensionStore.list()
   return { sources: buildSourceRegistry(data.extensions) }
 }
+
 
 
 

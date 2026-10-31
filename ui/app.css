@@ -2781,3 +2781,21 @@ html[data-theme="green"] {
   min-height: 230px;
   flex: 0 0 auto;
 }
+
+/* Podcast / audiobook entry */
+.podcast-add { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
+.podcast-add .field { flex: 1; min-width: 0; height: 34px; padding: 0 11px; border: 1px solid var(--ui-line, var(--line)); border-radius: 8px; background: var(--ui-input, var(--input)); color: var(--ui-text, var(--ink)); font: inherit; font-size: 12px; }
+.podcast-add .field:focus { outline: 2px solid var(--ui-accent, var(--accent)); outline-offset: 1px; }
+.podcast-list { display: flex; flex-direction: column; gap: 12px; }
+.podcast-feed { border: 1px solid var(--ui-line, var(--line)); border-radius: 10px; background: var(--ui-surface-2, var(--surface-2)); overflow: hidden; }
+.podcast-feed-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--ui-line, var(--line)); }
+.podcast-feed-head b { display: block; color: var(--ui-text, var(--ink)); font-size: 13px; }
+.podcast-feed-head small { display: block; margin-top: 2px; color: var(--ui-muted, var(--muted)); font-size: 10.5px; }
+.podcast-feed-actions { display: flex; gap: 4px; flex: none; }
+.podcast-episodes { display: flex; flex-direction: column; }
+.podcast-episode { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-top: 1px solid var(--ui-line, var(--line)); }
+.podcast-episode:first-child { border-top: 0; }
+.podcast-episode-copy { flex: 1; min-width: 0; }
+.podcast-episode-copy b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-text-2, var(--ink-2)); font-size: 11.5px; }
+.podcast-episode-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; color: var(--ui-muted, var(--muted)); font-size: 10px; }
+.podcast-local-panel { margin-top: 14px; }

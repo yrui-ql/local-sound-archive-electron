@@ -1,0 +1,19 @@
+{
+  "id": "podcast",
+  "name": "播客 RSS",
+  "version": "0.1.0",
+  "description": "订阅 RSS 播客，读取单集并直接播放。",
+  "runtime": "node",
+  "entry": "index.mjs",
+  "kind": "source",
+  "capabilities": ["feed", "resolve", "health"],
+  "sources": [
+    {
+      "id": "podcast-rss",
+      "name": "播客 RSS",
+      "auth": [],
+      "likes": false
+    }
+  ],
+  "permissions": ["network", "cache"]
+}
