@@ -2738,3 +2738,13 @@ select.native-select {
 #libSkeleton .sk-cell.w-size { width: 46px; justify-self: end; }
 #libSkeleton .sk-badge { width: 44px; height: 18px; border-radius: 5px; }
 #libSkeleton .sk { background: linear-gradient(90deg, color-mix(in srgb, var(--ui-text, var(--ink)) 6%, transparent), color-mix(in srgb, var(--ui-text, var(--ink)) 12%, transparent), color-mix(in srgb, var(--ui-text, var(--ink)) 6%, transparent)); background-size: 220% 100%; animation: shimmer 1.5s linear infinite; }
+
+/* Playing equalizer: song tempo, not a loading spinner. */
+.row-leading .row-eq i {
+  animation-duration: .42s;
+  animation-timing-function: cubic-bezier(.45, 0, .55, 1);
+  will-change: transform;
+}
+.row-leading .row-eq i:nth-child(1) { animation-delay: -.12s; }
+.row-leading .row-eq i:nth-child(2) { animation-delay: -.24s; }
+.row-leading .row-eq i:nth-child(3) { animation-delay: -.06s; }
