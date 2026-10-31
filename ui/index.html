@@ -14,7 +14,7 @@ try {
   }
 } catch (error) {}
 </script>
-<link rel="stylesheet" href="app.css?v=20261031-78">
+<link rel="stylesheet" href="app.css?v=20261031-79">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -150,20 +150,20 @@ try {
 
     <section class="page" id="page-podcast" aria-labelledby="podcastTitle">
       <header class="page-head">
-        <div class="page-title"><h1 id="podcastTitle">播客 / 有声书</h1><p>订阅 RSS 播客，单集可直接播放；本地 .m4b / 长音频仍走音乐库。</p></div>
+        <div class="page-title"><h1 id="podcastTitle">播客 / 有声书</h1><p>订阅 RSS，单集直接播放；本机有声书从音乐库读取。</p></div>
+        <div class="head-actions"><button id="btnPodcastRefresh" class="btn ghost small">刷新订阅</button></div>
       </header>
-      <div class="panel">
-        <div class="panel-head"><div><h2>RSS 订阅</h2><p id="podcastSub">播客和有声书单集</p></div><span class="badge" id="podcastCount"></span></div>
-        <div class="podcast-add">
-          <input id="podcastUrl" class="field" type="url" placeholder="粘贴 RSS 地址，例如 https://example.com/feed.xml" aria-label="播客 RSS 地址">
-          <button id="btnPodcastAdd" class="btn primary small">订阅</button>
-          <button id="btnPodcastRefresh" class="btn ghost small">刷新</button>
-        </div>
-        <div id="podcastList" class="podcast-list"></div>
-      </div>
-      <div class="panel podcast-local-panel">
-        <div class="panel-head"><div><h2>本机有声书</h2><p>扫描音乐库中的 .m4b 文件</p></div><button id="btnPodcastLocalRefresh" class="btn ghost small">刷新</button></div>
-        <div id="podcastLocal" class="podcast-list"></div>
+      <div class="podcast-shell">
+        <aside class="panel podcast-sidebar">
+          <div class="podcast-side-head"><div><h2>订阅</h2><p id="podcastSub">RSS 播客</p></div><span class="badge" id="podcastCount"></span></div>
+          <div class="podcast-add">
+            <input id="podcastUrl" class="field" type="url" placeholder="粘贴 RSS 地址" aria-label="播客 RSS 地址">
+            <button id="btnPodcastAdd" class="btn primary small">订阅</button>
+          </div>
+          <div id="podcastList" class="podcast-feed-list" role="list"></div>
+          <button id="btnPodcastLocal" class="podcast-local-link" type="button"><svg class="icon"><use href="#i-folder"/></svg><span>本机有声书</span><small id="podcastLocalCount"></small></button>
+        </aside>
+        <section class="panel podcast-detail" id="podcastDetail" aria-live="polite"></section>
       </div>
     </section>
 
@@ -619,10 +619,11 @@ try {
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=9"></script>
 <script src="pure.js?v=3"></script>
-<script src="app.js?v=20261031-65"></script>
+<script src="app.js?v=20261031-66"></script>
 <script src="custom-select.js?v=1"></script>
 </body>
 </html>
+
 
 
 

@@ -3548,87 +3548,151 @@ $('#extAuthClose')?.addEventListener('click', closeExtensionAuth);
 $('#extAuthCancel')?.addEventListener('click', closeExtensionAuth);
 
 
+﻿
 /* ---------- podcast / audiobook RSS ---------- */
+let podcastFeeds = [];
+let podcastSelection = '';
+const PODCAST_LOCAL = 'local';
+
 async function podcastInvoke(method, params = {}, timeoutMs = 60000) {
   const response = await call('extensionInvoke', { id: 'podcast', method, params, timeoutMs }).catch((error) => ({ ok: false, error: error.message }));
   if (!response || !response.ok) throw new Error((response && response.error) || '播客扩展不可用');
   return response.result;
 }
-function renderPodcasts(feeds) {
+function podcastBooks() {
+  return state.library.filter((track) => String(track.ext || '').toLowerCase() === 'm4b');
+}
+function podcastInitial(value) {
+  return Array.from(String(value || '?'))[0] || '?';
+}
+function podcastArt(item, className) {
+  return item && item.cover
+    ? '<span class="' + className + '"><img src="' + esc(item.cover) + '" alt="" loading="lazy"></span>'
+    : '<span class="' + className + '">' + esc(podcastInitial(item && item.title)) + '</span>';
+}
+function podcastDate(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+function podcastDuration(seconds) {
+  const total = Math.max(0, Math.round(Number(seconds) || 0));
+  if (!total) return '';
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return h ? h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') : m + ':' + String(s).padStart(2, '0');
+}
+function selectedPodcastFeed() {
+  return podcastFeeds.find((feed) => feed.url === podcastSelection) || null;
+}
+function renderPodcastSidebar() {
   const list = $('#podcastList');
+  if (!list) return;
   const count = $('#podcastCount');
   const sub = $('#podcastSub');
-  if (count) count.textContent = feeds.length ? feeds.length + ' 个订阅' : '';
-  if (sub) sub.textContent = feeds.length ? '共 ' + feeds.reduce((n, feed) => n + feed.episodes.length, 0) + ' 个单集' : '播客和有声书单集';
-  if (!feeds.length) {
-    list.innerHTML = emptyState('record', '还没有播客订阅', '粘贴 RSS 地址订阅播客；本地有声书可以放进音乐库直接播放。', '<button class="btn ghost small" data-go-extensions>打开扩展</button>');
-    list.querySelector('[data-go-extensions]')?.addEventListener('click', () => showPage('extensions'));
+  const localCount = $('#podcastLocalCount');
+  const books = podcastBooks();
+  if (count) count.textContent = podcastFeeds.length ? String(podcastFeeds.length) : '';
+  if (sub) sub.textContent = podcastFeeds.length ? podcastFeeds.length + ' 个订阅' : 'RSS 播客';
+  if (localCount) localCount.textContent = books.length ? String(books.length) : '';
+  list.innerHTML = podcastFeeds.length
+    ? podcastFeeds.map((feed) => '<button type="button" class="podcast-feed-item' + (podcastSelection === feed.url ? ' active' : '') + '" data-podcast-select="' + esc(feed.url) + '" role="listitem">' +
+      podcastArt(feed, 'podcast-feed-art') +
+      '<span class="podcast-feed-copy"><b>' + esc(feed.title) + '</b><small>' + feed.episodes.length + ' 个单集</small></span></button>').join('')
+    : '<p class="small-text" style="padding: 2px 8px 10px;">还没有订阅。</p>';
+  list.querySelectorAll('[data-podcast-select]').forEach((button) => button.addEventListener('click', () => {
+    podcastSelection = button.dataset.podcastSelect;
+    renderPodcastSidebar();
+    renderPodcastDetail();
+  }));
+  $('#btnPodcastLocal')?.classList.toggle('active', podcastSelection === PODCAST_LOCAL);
+}
+function podcastEpisodeRow(feed, episode) {
+  const meta = [podcastDate(episode.publishedAt), podcastDuration(episode.duration)].filter(Boolean).join(' · ');
+  return '<div class="podcast-episode">' +
+    '<button type="button" class="podcast-episode-play" data-podcast-play="' + esc(episode.url) + '" data-podcast-title="' + esc(episode.title) + '" data-podcast-feed="' + esc(feed.title) + '" aria-label="播放 ' + esc(episode.title) + '"><svg class="icon"><use href="#i-play"/></svg></button>' +
+    '<div class="podcast-episode-copy"><b>' + esc(episode.title) + '</b>' + (meta ? '<small>' + esc(meta) + '</small>' : '') + (episode.description ? '<p>' + esc(episode.description) + '</p>' : '') + '</div></div>';
+}
+function podcastEmpty(title, text, action) {
+  return '<div class="podcast-detail-empty"><div class="empty-icon"><svg class="icon"><use href="#i-record"/></svg></div><b>' + esc(title) + '</b><span>' + esc(text) + '</span>' + (action || '') + '</div>';
+}
+function renderPodcastDetail() {
+  const detail = $('#podcastDetail');
+  if (!detail) return;
+  if (podcastSelection === PODCAST_LOCAL) {
+    const books = podcastBooks();
+    detail.innerHTML = '<div class="podcast-show-head"><div class="podcast-show-art">书</div><div class="podcast-show-copy"><h2>本机有声书</h2><p>从音乐库读取 .m4b 文件。放入音乐库目录后刷新即可。</p><div class="podcast-show-meta">' + books.length + ' 本 · 本地文件</div></div></div>' +
+      (books.length ? '<div class="podcast-episodes">' + books.map((track) => '<div class="podcast-episode"><button type="button" class="podcast-episode-play" data-audiobook-play="' + esc(track.url) + '" aria-label="播放 ' + esc(track.title) + '"><svg class="icon"><use href="#i-play"/></svg></button><div class="podcast-episode-copy"><b>' + esc(track.title) + '</b><small>' + esc(track.artist || '未知作者') + ' · M4B · ' + formatSize(track.size) + '</small></div></div>').join('') + '</div>' : podcastEmpty('还没有有声书', '把 .m4b 文件放进音乐库目录，点侧栏「本机有声书」刷新。'));
+    detail.querySelectorAll('[data-audiobook-play]').forEach((button) => button.addEventListener('click', () => {
+      const track = books.find((item) => item.url === button.dataset.audiobookPlay);
+      if (track) playTrack(track, books);
+    }));
     return;
   }
-  list.innerHTML = feeds.map((feed) => '<section class="podcast-feed" data-feed-url="' + esc(feed.url) + '">' +
-    '<div class="podcast-feed-head"><div><b>' + esc(feed.title) + '</b><small>' + feed.episodes.length + ' 个单集</small></div><div class="podcast-feed-actions"><button class="btn ghost small" data-podcast-refresh="' + esc(feed.url) + '">刷新</button><button class="btn ghost small" data-podcast-remove="' + esc(feed.url) + '">移除</button></div></div>' +
-    '<div class="podcast-episodes">' + feed.episodes.map((episode) => '<div class="podcast-episode"><div class="podcast-episode-copy"><b>' + esc(episode.title) + '</b><small>' + esc(episode.publishedAt || '') + (episode.description ? ' · ' + esc(episode.description) : '') + '</small></div><button class="btn ghost small" data-podcast-play="' + esc(episode.url) + '" data-podcast-title="' + esc(episode.title) + '" data-podcast-feed="' + esc(feed.title) + '">播放</button></div>').join('') + '</div></section>').join('');
-  list.querySelectorAll('[data-podcast-play]').forEach((button) => button.addEventListener('click', () => {
+  const feed = selectedPodcastFeed();
+  if (!feed) {
+    detail.innerHTML = podcastEmpty('选一个播客', '从左边选择订阅，或在左侧粘贴 RSS 地址开始。');
+    return;
+  }
+  const meta = [feed.episodes.length + ' 个单集', feed.fetchedAt ? '更新于 ' + podcastDate(feed.fetchedAt) : ''].filter(Boolean).join(' · ');
+  detail.innerHTML = '<div class="podcast-show-head">' + podcastArt(feed, 'podcast-show-art') +
+    '<div class="podcast-show-copy"><h2>' + esc(feed.title) + '</h2>' + (feed.description ? '<p>' + esc(feed.description) + '</p>' : '') + '<div class="podcast-show-meta">' + esc(meta) + '</div></div>' +
+    '<div class="podcast-show-actions"><button class="btn ghost small" data-podcast-refresh="' + esc(feed.url) + '">刷新</button><button class="btn ghost small" data-podcast-remove="' + esc(feed.url) + '">移除</button></div></div>' +
+    '<div class="podcast-episodes">' + (feed.episodes.length ? feed.episodes.map((episode) => podcastEpisodeRow(feed, episode)).join('') : podcastEmpty('这个节目还没有单集', 'RSS 里暂时没有可播放的单集。')) + '</div>';
+  detail.querySelectorAll('[data-podcast-play]').forEach((button) => button.addEventListener('click', () => {
     playTrack({ url: button.dataset.podcastPlay, title: button.dataset.podcastTitle, artist: button.dataset.podcastFeed, ext: 'mp3', remote: true }, []);
     toast('正在播放：' + button.dataset.podcastTitle, 'ok');
   }));
-  list.querySelectorAll('[data-podcast-refresh]').forEach((button) => button.addEventListener('click', async () => {
+  detail.querySelector('[data-podcast-refresh]')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
     button.disabled = true; button.textContent = '刷新中…';
-    try { await podcastInvoke('feed.refresh', { url: button.dataset.podcastRefresh }, 120000); await loadPodcasts(); toast('播客已刷新', 'ok'); }
+    try { await podcastInvoke('feed.refresh', { url: feed.url }, 120000); await loadPodcasts(); toast('播客已刷新', 'ok'); }
     catch (error) { toast('刷新失败：' + error.message, 'err'); button.disabled = false; button.textContent = '刷新'; }
-  }));
-  list.querySelectorAll('[data-podcast-remove]').forEach((button) => button.addEventListener('click', async () => {
-    const ok = await openModal({ title: '移除订阅', text: '只移除 RSS 订阅，不删除已下载或本地文件。', confirmLabel: '移除' });
+  });
+  detail.querySelector('[data-podcast-remove]')?.addEventListener('click', async () => {
+    const ok = await openModal({ title: '移除订阅', text: '只移除 RSS 订阅，不删除本地文件。', confirmLabel: '移除' });
     if (!ok) return;
-    try { await podcastInvoke('feed.remove', { url: button.dataset.podcastRemove }); await loadPodcasts(); toast('订阅已移除', 'ok'); }
+    try { await podcastInvoke('feed.remove', { url: feed.url }); await loadPodcasts(); toast('订阅已移除', 'ok'); }
     catch (error) { toast('移除失败：' + error.message, 'err'); }
-  }));
+  });
 }
 async function loadPodcasts() {
   const list = $('#podcastList');
   if (!list) return;
-  list.innerHTML = '<div class="record-loading">正在读取订阅…</div>';
+  list.innerHTML = '<p class="small-text" style="padding: 2px 8px;">正在读取订阅…</p>';
   try {
     const data = await podcastInvoke('feed.list', {}, 30000);
-    renderPodcasts(Array.isArray(data.feeds) ? data.feeds : []);
+    podcastFeeds = Array.isArray(data.feeds) ? data.feeds : [];
+    if (podcastSelection !== PODCAST_LOCAL && !podcastFeeds.some((feed) => feed.url === podcastSelection)) {
+      podcastSelection = podcastFeeds[0] ? podcastFeeds[0].url : '';
+    }
   } catch (error) {
-    list.innerHTML = emptyState('record', '播客扩展未启用', error.message + '。请在扩展页安装并启用「播客 RSS」。', '<button class="btn ghost small" data-go-extensions>打开扩展</button>');
-    list.querySelector('[data-go-extensions]')?.addEventListener('click', () => showPage('extensions'));
+    podcastFeeds = [];
+    podcastSelection = '';
+    $('#podcastSub').textContent = error.message;
   }
-  renderLocalAudiobooks();
+  renderPodcastSidebar();
+  renderPodcastDetail();
 }
 $('#btnPodcastAdd')?.addEventListener('click', async () => {
   const input = $('#podcastUrl');
   const url = input ? input.value.trim() : '';
   if (!url) { input?.focus(); return; }
   const button = $('#btnPodcastAdd');
-  button.disabled = true; button.textContent = '订阅中…';
+  button.disabled = true; button.textContent = '…';
   try {
-    await podcastInvoke('feed.add', { url }, 120000);
+    const result = await podcastInvoke('feed.add', { url }, 120000);
     if (input) input.value = '';
+    if (result && result.feed && result.feed.url) podcastSelection = result.feed.url;
     await loadPodcasts();
     toast('播客已订阅', 'ok');
   } catch (error) { toast('订阅失败：' + error.message, 'err'); }
   finally { button.disabled = false; button.textContent = '订阅'; }
 });
 $('#btnPodcastRefresh')?.addEventListener('click', loadPodcasts);
-$('#btnPodcastLocalRefresh')?.addEventListener('click', async () => {
-  await loadLibrary();
-  renderLocalAudiobooks();
+$('#btnPodcastLocal')?.addEventListener('click', () => {
+  podcastSelection = PODCAST_LOCAL;
+  renderPodcastSidebar();
+  renderPodcastDetail();
 });
-
-function renderLocalAudiobooks() {
-  const list = $('#podcastLocal');
-  if (!list) return;
-  const books = state.library.filter((track) => String(track.ext || '').toLowerCase() === 'm4b');
-  if (!books.length) {
-    list.innerHTML = '<p class="small-text">还没有 .m4b 有声书。把文件放进音乐库目录后，这里和内库都会出现。</p>';
-    return;
-  }
-  list.innerHTML = books.map((track) => '<div class="podcast-episode"><div class="podcast-episode-copy"><b>' + esc(track.title) + '</b><small>' + esc(track.artist || '') + ' · M4B · ' + formatSize(track.size) + '</small></div><button class="btn ghost small" data-audiobook-play="' + esc(track.url) + '">播放</button></div>').join('');
-  list.querySelectorAll('[data-audiobook-play]').forEach((button) => button.addEventListener('click', () => {
-    const track = books.find((item) => item.url === button.dataset.audiobookPlay);
-    if (track) playTrack(track, books);
-  }));
-}
-

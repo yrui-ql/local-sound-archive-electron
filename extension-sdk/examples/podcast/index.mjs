@@ -27,7 +27,10 @@ function attr(xml, name) {
   return match ? match[1] : ''
 }
 function parseFeed(xml, feedUrl) {
-  const title = tag(xml, 'title') || feedUrl
+  const channel = String(xml).split(/<item[^>]*>/i)[0]
+  const title = tag(channel, 'title') || feedUrl
+  const description = tag(channel, 'description').slice(0, 320)
+  const image = (channel.match(/<image[^>]*>[\s\S]*?<url>([^<]+)<\/url>/i) || [])[1] || (channel.match(/<itunes:image[^>]*href="([^"]+)"/i) || [])[1] || ''
   const items = []
   for (const match of String(xml).matchAll(/<item[^>]*>([\s\S]*?)<\/item>/gi)) {
     const block = match[1]
@@ -43,7 +46,7 @@ function parseFeed(xml, feedUrl) {
       description: tag(block, 'description').slice(0, 220),
     })
   }
-  return { id: feedUrl, title, url: feedUrl, fetchedAt: new Date().toISOString(), episodes: items.slice(0, 120) }
+  return { id: feedUrl, title, description, cover: image.replace(/&amp;/g, '&'), url: feedUrl, fetchedAt: new Date().toISOString(), episodes: items.slice(0, 120) }
 }
 
 async function fetchFeed(url) {
