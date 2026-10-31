@@ -116,3 +116,48 @@ if (recordHost && recordHost.addEventListener) {
     if (message.type === 'record-stop') stopScreenRecording()
   })
 }
+/* Overlay scroll indicator: no native rails, only motion feedback. */
+(() => {
+  const selector = '.main,.sidebar,.account-card,.fx-body,.queue-list,.lyrics-list,.search-results,.settings-main'
+  const thumb = document.createElement('div')
+  thumb.id = 'lsa-scroll-thumb'
+  document.body.appendChild(thumb)
+  let hideTimer = 0
+  let active = null
+
+  function update(target) {
+    if (!target || target.scrollHeight <= target.clientHeight) {
+      thumb.classList.remove('visible')
+      active = null
+      return
+    }
+    const rect = target.getBoundingClientRect()
+    const track = Math.max(0, target.clientHeight - 8)
+    const size = Math.max(26, Math.round(track * target.clientHeight / target.scrollHeight))
+    const maxScroll = Math.max(1, target.scrollHeight - target.clientHeight)
+    const top = rect.top + 4 + Math.round((track - size) * target.scrollTop / maxScroll)
+    thumb.style.height = size + 'px'
+    thumb.style.top = top + 'px'
+    thumb.style.right = Math.max(3, window.innerWidth - rect.right + 3) + 'px'
+    thumb.classList.add('visible')
+    active = target
+  }
+
+  function hide() {
+    thumb.classList.remove('visible')
+    active = null
+  }
+
+  document.addEventListener('scroll', (event) => {
+    const target = event.target
+    if (!(target instanceof Element) || !target.matches(selector)) return
+    update(target)
+    clearTimeout(hideTimer)
+    hideTimer = setTimeout(hide, 800)
+  }, true)
+
+  window.addEventListener('resize', () => {
+    if (active) update(active)
+    else hide()
+  }, { passive: true })
+})()
