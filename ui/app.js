@@ -546,6 +546,14 @@ function recentWhen(iso) {
   if (date.toDateString() === yesterday.toDateString()) return '昨天 ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
   return (date.getMonth() + 1) + '/' + date.getDate() + ' ' + String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
 }
+function displayTitle(value) {
+  const raw = String(value || '').trim();
+  return raw
+    .replace(/^\s*\d{1,3}\s*[._\-–—、]\s*/, '')
+    .replace(/^\s*\d{1,3}\s+(?=\S)/, '')
+    .replace(/^\s*\d{1,3}\s*(?=[《【\[])/, '')
+    .trim() || raw;
+}
 function renderRecent() {
   const list = $('#recentList');
   if (!list) return;
@@ -560,8 +568,8 @@ function renderRecent() {
     const fmt = track.ext ? String(track.ext).toUpperCase() : '';
     return '<button class="recent-item' + (active ? ' active' : '') + '" data-recent-i="' + index + '" role="listitem" style="--h:' + hueFor((track.title || '') + '|' + (track.artist || '')) + '">' +
       '<span class="recent-index">' + (active ? '▶' : String(index + 1).padStart(2, '0')) + '</span>' +
-      '<span class="art recent-art"><span class="art-initial">' + esc(String(track.title || '?').slice(0, 1).toUpperCase()) + '</span></span>' +
-      '<span class="recent-copy"><b>' + esc(track.title || '未知歌曲') + '</b><small>' + esc(track.artist || '未知歌手') + (fmt ? ' · ' + esc(fmt) : '') + '</small></span>' +
+      '<span class="art recent-art"><span class="art-initial">' + esc(displayTitle(track.title || '?').slice(0, 1).toUpperCase()) + '</span></span>' +
+      '<span class="recent-copy"><b>' + esc(displayTitle(track.title || '未知歌曲')) + '</b><small>' + esc(track.artist || '未知歌手') + (fmt ? ' · ' + esc(fmt) : '') + '</small></span>' +
       '<span class="recent-when">' + esc(recentWhen(track.at)) + '</span>' +
     '</button>';
   }).join('');

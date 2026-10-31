@@ -1,4 +1,4 @@
-﻿const desktop = window.lsaDesktop
+const desktop = window.lsaDesktop
 
 if (desktop) {
   document.body.classList.add('platform-' + desktop.platform)
@@ -116,7 +116,7 @@ if (recordHost && recordHost.addEventListener) {
     if (message.type === 'record-stop') stopScreenRecording()
   })
 }
-/* Overlay scroll indicator: no native rails, only motion feedback. */
+/* Draggable overlay scrollbar plus keyboard page jumps. No native rails. */
 (() => {
   const selector = '.main,.sidebar,.account-card,.fx-body,.queue-list,.lyrics-list,.lib-list,.recent-list,.search-results,.settings-main'
   const thumb = document.createElement('div')
@@ -124,6 +124,9 @@ if (recordHost && recordHost.addEventListener) {
   document.body.appendChild(thumb)
   let hideTimer = 0
   let active = null
+  let dragging = false
+  let dragStartY = 0
+  let dragStartScroll = 0
 
   function update(target) {
     if (!target || target.scrollHeight <= target.clientHeight) {
@@ -144,8 +147,16 @@ if (recordHost && recordHost.addEventListener) {
   }
 
   function hide() {
+    if (dragging) return
     thumb.classList.remove('visible')
     active = null
+  }
+
+  function showFor(target) {
+    if (!target || !target.matches(selector)) return
+    clearTimeout(hideTimer)
+    update(target)
+    hideTimer = setTimeout(hide, 900)
   }
 
   document.addEventListener('scroll', (event) => {
@@ -153,8 +164,56 @@ if (recordHost && recordHost.addEventListener) {
     if (!(target instanceof Element) || !target.matches(selector)) return
     update(target)
     clearTimeout(hideTimer)
-    hideTimer = setTimeout(hide, 800)
+    if (!dragging) hideTimer = setTimeout(hide, 900)
   }, true)
+
+  document.addEventListener('pointerover', (event) => {
+    const target = event.target instanceof Element ? event.target.closest(selector) : null
+    if (target) showFor(target)
+  }, { passive: true })
+
+  document.addEventListener('pointerleave', (event) => {
+    if (event.target instanceof Element && event.target.matches(selector)) {
+      clearTimeout(hideTimer)
+      hideTimer = setTimeout(hide, 500)
+    }
+  }, true)
+
+  thumb.addEventListener('pointerdown', (event) => {
+    if (!active || active.scrollHeight <= active.clientHeight) return
+    dragging = true
+    dragStartY = event.clientY
+    dragStartScroll = active.scrollTop
+    thumb.classList.add('dragging')
+    thumb.setPointerCapture?.(event.pointerId)
+    event.preventDefault()
+  })
+  thumb.addEventListener('pointermove', (event) => {
+    if (!dragging || !active) return
+    const maxScroll = Math.max(1, active.scrollHeight - active.clientHeight)
+    const rect = active.getBoundingClientRect()
+    const track = Math.max(1, rect.height - 8 - thumb.offsetHeight)
+    active.scrollTop = dragStartScroll + (event.clientY - dragStartY) * maxScroll / track
+  })
+  const endDrag = () => {
+    dragging = false
+    thumb.classList.remove('dragging')
+    hideTimer = setTimeout(hide, 700)
+  }
+  thumb.addEventListener('pointerup', endDrag)
+  thumb.addEventListener('pointercancel', endDrag)
+
+  document.addEventListener('keydown', (event) => {
+    if (event.target.closest('input, textarea, select, [contenteditable="true"]')) return
+    const page = document.querySelector('.page.active')
+    const target = page?.querySelector('.lib-list, .recent-list, .main')
+    if (!target || target.scrollHeight <= target.clientHeight) return
+    const pageStep = Math.max(240, target.clientHeight * 0.82)
+    if (event.key === 'PageDown') { target.scrollBy({ top: pageStep, behavior: 'smooth' }); event.preventDefault() }
+    if (event.key === 'PageUp') { target.scrollBy({ top: -pageStep, behavior: 'smooth' }); event.preventDefault() }
+    if (event.key === 'End' && (event.ctrlKey || event.metaKey || !event.shiftKey)) { target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' }); event.preventDefault() }
+    if (event.key === 'Home' && (event.ctrlKey || event.metaKey || !event.shiftKey)) { target.scrollTo({ top: 0, behavior: 'smooth' }); event.preventDefault() }
+  })
 
   window.addEventListener('resize', () => {
     if (active) update(active)

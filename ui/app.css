@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bg: #080a0d;
   --bg-2: #0c0f14;
   --surface: #11161d;
@@ -2433,16 +2433,17 @@ summary:focus-visible { outline: 2px solid var(--ui-accent, var(--accent)); outl
 #lsa-scroll-thumb {
   position: fixed;
   right: 3px;
-  width: 3px;
+  width: 5px;
   min-height: 26px;
   border-radius: 99px;
-  background: color-mix(in srgb, var(--ui-muted, var(--muted)) 42%, transparent);
+  background: color-mix(in srgb, var(--ui-muted, var(--muted)) 48%, transparent);
   opacity: 0;
   pointer-events: none;
   z-index: 999;
-  transition: opacity .18s ease;
+  transition: opacity .18s ease, width .14s ease;
 }
-#lsa-scroll-thumb.visible { opacity: .9; }
+#lsa-scroll-thumb.visible { opacity: .72; pointer-events: auto; cursor: grab; }
+#lsa-scroll-thumb.dragging { opacity: 1; width: 6px; cursor: grabbing; }
 
 /* Recording list: playable, deletable, incremental. */
 .record-list { display: flex; flex-direction: column; gap: 2px; min-height: 90px; }

@@ -126,6 +126,15 @@ function audioUrlFor(file) {
   return `http://127.0.0.1:${audioPort}/audio/${audioToken}/${id}`
 }
 
+function cleanDisplayTitle(file) {
+  const raw = path.basename(file, path.extname(file))
+  return raw
+    .replace(/^\s*\d{1,3}\s*[._\-–—、]\s*/, '')
+    .replace(/^\s*\d{1,3}\s+(?=\S)/, '')
+    .replace(/^\s*\d{1,3}\s*(?=[《【\[])/, '')
+    .trim() || raw
+}
+
 function publicTrack(file, root) {
   const ext = path.extname(file).slice(1).toLowerCase()
   const id = Buffer.from(file, 'utf8').toString('base64url')
@@ -133,7 +142,7 @@ function publicTrack(file, root) {
     id,
     path: file,
     url: audioUrlFor(file),
-    title: path.basename(file, path.extname(file)),
+    title: cleanDisplayTitle(file),
     artist: path.basename(path.dirname(file)),
     album: '',
     ext,
