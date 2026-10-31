@@ -91,13 +91,21 @@ macOS 构建使用 `build/entitlements.mac.plist` 的 hardened runtime 配置；
 ## 结构
 
 ```text
-src/              Electron main / preload / library / AI / extensions
-ui/               复用中的界面资源
-ai-control/       本地 AI 控制协议与 MCP bridge
-extension-sdk/    扩展契约、样例与文档
-scripts/          便携打包、喜欢同步、启动器
-docs/             截图与迁移记录
+src/main/index.js       Electron 主进程入口、窗口与 IPC 编排
+src/main/services/      主进程领域服务（库、账号、扩展、喜欢）
+src/preload/index.js    contextBridge 窄接口
+ui/                     渲染层资源
+ai-control/             本地 AI 控制协议与 MCP bridge
+extension-sdk/          扩展契约、样例与文档
+scripts/                便携打包、喜欢同步、启动器
+config/                 公共默认配置与 vendor 审计锚点
+docs/                   架构、工作流、ADR 与截图
 ```
+
+架构与开发流程：
+
+- [docs/architecture.md](docs/architecture.md)
+- [docs/engineering-workflow.md](docs/engineering-workflow.md)
 
 ## License
 

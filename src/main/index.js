@@ -1,21 +1,21 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session } = require('electron')
+﻿const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session } = require('electron')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const http = require('node:http')
 const crypto = require('node:crypto')
 const path = require('node:path')
 const { spawn } = require('node:child_process')
-const { LibraryStore } = require('./library')
-const { ExtensionStore } = require('./extensions')
-const { ExtensionHost } = require('./extension-host')
-const { LikesStore } = require('./likes')
-const { AccountService } = require('./account')
+const { LibraryStore } = require('./services/library')
+const { ExtensionStore } = require('./services/extensions')
+const { ExtensionHost } = require('./services/extension-host')
+const { LikesStore } = require('./services/likes')
+const { AccountService } = require('./services/account')
 
 const isMac = process.platform === 'darwin'
 app.setAppUserModelId('com.local-sound-archive.app')
 
 const AUDIO_EXTENSIONS = new Set(['.flac', '.mp3', '.m4a', '.aac', '.wav', '.ogg', '.opus', '.wma'])
-const APP_ROOT = path.join(__dirname, '..')
+const APP_ROOT = path.join(__dirname, '..', '..')
 const RENDERER = path.join(APP_ROOT, 'ui')
 const DATA_DIR = process.env.LSA_DATA_DIR
   ? path.resolve(process.env.LSA_DATA_DIR)
@@ -556,7 +556,7 @@ function detectAgents() {
       }
       if (agent.id === 'cursor' && process.platform === 'win32') {
         candidatesPath.push(path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Cursor', 'Cursor.exe'))
-        candidatesPath.push(path.join(APP_ROOT, '..', '..', '01_ENV', '20_ai', 'cursor', 'app', 'Cursor.exe'))
+        candidatesPath.push(path.join(APP_ROOT, '..', '01_ENV', '20_ai', 'cursor', 'app', 'Cursor.exe'))
       }
       const found = candidatesPath.find((candidate) => candidate && fs.existsSync(candidate)) || ''
       return { ...agent, found: !!found, path: found }
@@ -884,7 +884,7 @@ async function createWindow() {
       ? { titleBarStyle: 'hiddenInset' }
       : { frame: false }),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '..', 'preload', 'index.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -997,6 +997,7 @@ app.on('before-quit', () => {
     try { audioServer.close() } catch { }
   }
 })
+
 
 
 

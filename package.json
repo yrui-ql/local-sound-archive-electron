@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "private": true,
   "description": "Local-first music archive and player for Windows and macOS",
-  "main": "src/main.js",
+  "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
@@ -28,7 +28,7 @@
       "package.json"
     ],
     "extraMetadata": {
-      "main": "src/main.js"
+      "main": "src/main/index.js"
     },
     "win": {
       "target": [
