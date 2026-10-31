@@ -2575,3 +2575,57 @@ summary:focus-visible { outline: 2px solid var(--ui-accent, var(--accent)); outl
 
 /* The player owns its own grid row; keep only breathing room above it. */
 .main { padding-bottom: 18px; }
+
+/* Native select is kept for value/events but replaced visually. */
+select.native-select {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  clip-path: inset(50%);
+}
+.custom-select { position: relative; display: inline-flex; }
+.custom-select-trigger {
+  height: 29px;
+  min-width: 92px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 9px;
+  border: 1px solid var(--ui-line, var(--line));
+  border-radius: 7px;
+  background: var(--ui-input, var(--bg-2));
+  color: var(--ui-text-2, var(--ink-2));
+  font-size: 11px;
+  cursor: pointer;
+}
+.custom-select-trigger:hover { border-color: var(--ui-line-strong, var(--line-strong)); background: var(--ui-surface, var(--surface)); }
+.custom-select-trigger:focus-visible { outline: 2px solid var(--ui-accent, var(--accent)); outline-offset: 1px; }
+.custom-select-chevron { width: 6px; height: 6px; border-right: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: rotate(45deg) translateY(-1px); opacity: .6; }
+.custom-select-menu {
+  position: absolute;
+  z-index: 1000;
+  top: calc(100% + 5px);
+  right: 0;
+  min-width: 132px;
+  padding: 4px;
+  border: 1px solid var(--ui-line-strong, var(--line-strong));
+  border-radius: 9px;
+  background: var(--ui-surface, var(--surface));
+  box-shadow: 0 12px 34px rgba(0,0,0,.38);
+}
+.custom-select-menu.hidden { display: none; }
+.custom-select-option {
+  min-height: 29px;
+  display: flex;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 6px;
+  color: var(--ui-text-2, var(--ink-2));
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.custom-select-option:hover, .custom-select-option.selected { background: var(--ui-hover, rgba(255,255,255,.065)); color: var(--ui-text, var(--ink)); }
+.custom-select-option.selected::after { content: '✓'; margin-left: auto; color: var(--ui-accent, var(--accent)); font-size: 11px; }
