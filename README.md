@@ -91,7 +91,7 @@ macOS 使用 `build/entitlements.mac.plist` 的 hardened runtime 配置。正式
 
 ### 外部音源扩展
 
-YouTube Music 通过 `extension-sdk/examples/youtube-music` 作为可选扩展接入，搜索与下载使用本机 `yt-dlp`。汽水音乐通过 `extension-sdk/examples/soda` 接入，登录、搜索、下载入队和喜欢同步都走扩展能力。
+YouTube Music 通过 `extension-sdk/examples/youtube-music` 作为可选扩展接入，搜索与下载使用本机 `yt-dlp`。汽水音乐、网易云、QQ 音乐分别通过 `extension-sdk/examples/soda`、`netease`、`qq` 接入，登录、搜索、下载入队和喜欢同步都走扩展能力。
 
 ```text
 <data>/tools/yt-dlp.exe      # Windows
@@ -220,7 +220,7 @@ Search, QR login and downloads require a local `go-music-dl` service on `127.0.0
 
 ### External source extension
 
-YouTube Music is available as an optional extension in `extension-sdk/examples/youtube-music`. It uses a local `yt-dlp` binary for search and resolution. Soda Music is available in `extension-sdk/examples/soda`, with auth, search, queueing and likes sync through the extension contract.
+YouTube Music is available as an optional extension in `extension-sdk/examples/youtube-music`. It uses a local `yt-dlp` binary for search and resolution. Soda, NetEase and QQ Music are available in `extension-sdk/examples/{soda,netease,qq}`, with auth, search, queueing and likes sync through the extension contract.
 
 ```text
 <data>/tools/yt-dlp.exe      # Windows
@@ -263,6 +263,7 @@ Source, configuration, README and the launcher must pass `privacy-audit`. The of
 ### License
 
 MIT
+
 
 
 

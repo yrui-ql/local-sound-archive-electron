@@ -1,0 +1,39 @@
+{
+  "id": "qq",
+  "name": "QQ 音乐（扩展）",
+  "version": "0.1.0",
+  "description": "QQ 音乐来源扩展：扫码登录、搜索、下载入队、喜欢列表。",
+  "runtime": "node",
+  "entry": "index.mjs",
+  "kind": "source",
+  "capabilities": [
+    "search",
+    "resolve",
+    "auth",
+    "likes",
+    "scheduler",
+    "health"
+  ],
+  "sources": [
+    {
+      "id": "qq",
+      "name": "QQ 音乐",
+      "auth": [
+        "qr"
+      ],
+      "likes": true
+    }
+  ],
+  "permissions": [
+    "network",
+    "auth",
+    "cache"
+  ],
+  "jobs": [
+    {
+      "id": "likes-sync",
+      "title": "QQ 喜欢同步",
+      "defaultIntervalHours": 24
+    }
+  ]
+}

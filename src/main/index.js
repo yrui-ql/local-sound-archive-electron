@@ -13,6 +13,7 @@ const { cleanTitleText, cleanDisplayTitle, safeFileName, isPathInside } = requir
 const { buildSourceRegistry } = require('./services/sources')
 const { candidatePaths, parseDisplayIcon } = require('./services/agents')
 const { ProvenanceStore } = require('./services/provenance')
+const QRCode = require('qrcode')
 const { LikesStore } = require('./services/likes')
 const { AccountService } = require('./services/account')
 
@@ -986,6 +987,10 @@ async function handleCommand(cmd, args) {
     case 'copyText':
       require('electron').clipboard.writeText(String(args?.text || ''))
       return { ok: true }
+    case 'qrImage':
+      return QRCode.toDataURL(String(args?.text || ''), { margin: 1, width: 360, errorCorrectionLevel: 'M' })
+        .then((image) => ({ ok: true, image }))
+        .catch((error) => ({ ok: false, error: error.message }))
     default:
       throw new Error(`Not implemented in Electron M1: ${cmd}`)
   }

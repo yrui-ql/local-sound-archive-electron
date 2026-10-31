@@ -14,7 +14,7 @@ try {
   }
 } catch (error) {}
 </script>
-<link rel="stylesheet" href="app.css?v=20261031-75">
+<link rel="stylesheet" href="app.css?v=20261031-76">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -575,6 +575,18 @@ try {
     </div>
   </div>
 
+  <div id="extAuthModal" class="account-modal hidden" role="dialog" aria-modal="true" aria-labelledby="extAuthTitle">
+    <div class="account-card ext-auth-card">
+      <div class="account-head">
+        <div><h2 id="extAuthTitle">扩展登录</h2><p id="extAuthSub">扫码后自动保存本机登录态。</p></div>
+        <button id="extAuthClose" class="btn ghost icon-btn" aria-label="关闭扩展登录"><svg class="icon"><use href="#i-x"/></svg></button>
+      </div>
+      <div class="qr-frame"><img id="extAuthImage" alt="登录二维码"></div>
+      <p id="extAuthState" class="small-text" role="status">正在生成二维码…</p>
+      <div class="qr-actions"><button id="extAuthCancel" class="btn ghost small">取消</button></div>
+    </div>
+  </div>
+
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalText">
     <div class="modal-card">
       <div class="modal-kicker">请确认</div>
@@ -587,10 +599,11 @@ try {
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=9"></script>
 <script src="pure.js?v=3"></script>
-<script src="app.js?v=20261031-62"></script>
+<script src="app.js?v=20261031-63"></script>
 <script src="custom-select.js?v=1"></script>
 </body>
 </html>
+
 
 
 

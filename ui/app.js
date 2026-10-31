@@ -3195,8 +3195,12 @@ function renderExtensions() {
       button.textContent = '连接中…';
       try {
         const res = await call('extensionInvoke', { id, method: 'auth.begin', params: {}, timeoutMs: 120000 }).catch((error) => ({ ok: false, error: error.message }));
-        if (res && res.ok) toast((res.result && res.result.message) || '账号已连接', 'ok');
-        else toast('连接失败：' + ((res && res.error) || '未知错误'), 'err');
+        if (res && res.ok) {
+          const result = res.result || {};
+          const extension = state.extensions.find((item) => item.id === id);
+          if (result.url || result.image_url) await openExtensionAuth(extension || { id, name: id }, result);
+          else toast(result.message || '账号已连接', 'ok');
+        } else toast('连接失败：' + ((res && res.error) || '未知错误'), 'err');
       } finally {
         button.disabled = false;
         button.textContent = '连接账号';
@@ -3490,3 +3494,52 @@ function initRecentSettings() {
   });
 }
 
+
+let extAuthPollTimer = 0;
+let extAuthSession = null;
+function closeExtensionAuth() {
+  clearInterval(extAuthPollTimer);
+  extAuthPollTimer = 0;
+  extAuthSession = null;
+  $('#extAuthModal').classList.add('hidden');
+  $('#extAuthImage').removeAttribute('src');
+}
+async function openExtensionAuth(extension, result) {
+  const imageUrl = result.image_url || '';
+  let image = imageUrl;
+  if (!image && result.url) {
+    const qr = await call('qrImage', { text: result.url }).catch(() => null);
+    image = qr && qr.image ? qr.image : '';
+  }
+  if (!image) { toast(result.message || '扩展没有返回二维码', 'err'); return; }
+  extAuthSession = { extensionId: extension.id, key: result.key || '' };
+  $('#extAuthTitle').textContent = extension.name + ' 登录';
+  $('#extAuthSub').textContent = result.message || '打开对应 App 扫码登录。';
+  $('#extAuthImage').src = image;
+  $('#extAuthState').textContent = '等待扫码…';
+  $('#extAuthModal').classList.remove('hidden');
+  clearInterval(extAuthPollTimer);
+  extAuthPollTimer = setInterval(async () => {
+    if (!extAuthSession) return;
+    const response = await call('extensionInvoke', {
+      id: extAuthSession.extensionId,
+      method: 'auth.poll',
+      params: { key: extAuthSession.key },
+      timeoutMs: 60000,
+    }).catch((error) => ({ ok: false, error: error.message }));
+    if (!response || !response.ok) {
+      $('#extAuthState').textContent = response && response.error ? '登录失败：' + response.error : '登录失败';
+      return;
+    }
+    const data = response.result || {};
+    if (data.status === 'success') {
+      closeExtensionAuth();
+      toast('登录成功，已保存本机登录态', 'ok');
+      loadExtensions();
+    } else {
+      $('#extAuthState').textContent = data.message || '等待扫码…';
+    }
+  }, 1500);
+}
+$('#extAuthClose')?.addEventListener('click', closeExtensionAuth);
+$('#extAuthCancel')?.addEventListener('click', closeExtensionAuth);
