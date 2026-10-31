@@ -434,10 +434,12 @@ function openModal({ title, text, confirmLabel = '确定', cancelLabel = '取消
 }
 
 /* ---------- tooltips ---------- */
-function openInfo(btn) {
-  const tip = btn.dataset.tip;
-  if (!tip) return;
-  if (infoTrigger === btn) { closeInfo(); return; }
+let infoHoverTimer = 0;
+let infoCloseTimer = 0;
+function showInfo(btn) {
+  const tip = btn && btn.dataset ? btn.dataset.tip : '';
+  if (!tip || infoTrigger === btn) return;
+  clearTimeout(infoCloseTimer);
   closeInfo();
   infoTrigger = btn;
   btn.setAttribute('aria-expanded', 'true');
@@ -453,15 +455,46 @@ function openInfo(btn) {
   pop.style.top = top + 'px';
   pop.style.width = width + 'px';
 }
+function toggleInfo(btn) {
+  // A hover-opened bubble should stay open when the user clicks the icon;
+  // clicking outside or Escape closes it.
+  if (infoTrigger === btn) return;
+  showInfo(btn);
+}
+function scheduleInfoClose() {
+  clearTimeout(infoCloseTimer);
+  infoCloseTimer = setTimeout(() => closeInfo(), 120);
+}
 function closeInfo() {
+  clearTimeout(infoHoverTimer);
+  clearTimeout(infoCloseTimer);
   if (infoTrigger) infoTrigger.setAttribute('aria-expanded', 'false');
   infoTrigger = null;
   $('#infoPopover').hidden = true;
 }
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.info-btn');
-  if (btn) { e.preventDefault(); e.stopPropagation(); openInfo(btn); return; }
+  if (btn) { e.preventDefault(); e.stopPropagation(); toggleInfo(btn); return; }
   if (!e.target.closest('#infoPopover')) closeInfo();
+});
+document.addEventListener('pointerover', (e) => {
+  const btn = e.target.closest('.info-btn');
+  if (!btn || infoTrigger === btn) return;
+  clearTimeout(infoCloseTimer);
+  clearTimeout(infoHoverTimer);
+  infoHoverTimer = setTimeout(() => showInfo(btn), 140);
+});
+document.addEventListener('pointerout', (e) => {
+  if (!e.target.closest('.info-btn')) return;
+  clearTimeout(infoHoverTimer);
+  scheduleInfoClose();
+});
+document.addEventListener('focusin', (e) => {
+  const btn = e.target.closest('.info-btn');
+  if (btn) showInfo(btn);
+});
+document.addEventListener('focusout', (e) => {
+  if (e.target.closest('.info-btn')) scheduleInfoClose();
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeInfo(); });
 window.addEventListener('resize', closeInfo);

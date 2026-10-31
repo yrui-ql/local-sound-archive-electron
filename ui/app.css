@@ -2756,3 +2756,7 @@ html[data-theme="green"] {
 .player-progress input[type="range"]:focus-visible {
   box-shadow: none !important;
 }
+
+.info-popover { animation: infoPopIn .14s var(--ease-out, cubic-bezier(.2,.8,.2,1)) both; pointer-events: none; }
+@keyframes infoPopIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .info-popover { animation: none; } }
