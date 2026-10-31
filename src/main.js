@@ -40,6 +40,7 @@ const AI_CONFIG_PATH = path.join(DATA_DIR, 'ai-control.json')
 const AI_DOCS_PATH = path.join(APP_ROOT, 'ai-control', 'AI_CONTROL.md')
 const AI_MCP_PATH = path.join(APP_ROOT, 'ai-control', 'mcp-server.mjs')
 let aiConfig = { enabled: false, port: 18765, token: crypto.randomBytes(18).toString('hex') }
+let aiStarting = false
 let aiServer = null
 let aiLastError = ''
 let libraryStore = null
@@ -418,45 +419,59 @@ async function executeAiCommand(action, args = {}) {
 
 function startAiServer() {
   if (aiServer) return aiStatus()
+  if (aiStarting) return aiStatus()
+  const preferred = Math.max(1, Number(aiConfig.port) || 18765)
+  aiLastError = ''
+  aiStarting = true
   return new Promise((resolve) => {
-    aiLastError = ''
-    const server = http.createServer(async (req, res) => {
-      const send = (status, data) => {
-        res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
-        res.end(JSON.stringify(data))
-      }
-      try {
-        const token = req.headers['x-lsa-token'] || String(req.headers.authorization || '').replace(/^Bearer\s+/i, '')
-        if (token !== aiConfig.token) return send(401, { ok: false, error: 'unauthorized' })
-        const url = new URL(req.url, `http://127.0.0.1:${aiConfig.port}`)
-        if (url.pathname === '/v1/health') return send(200, { ok: true, service: 'lsa-ai-control', version: '1' })
-        if (url.pathname === '/v1/status' && req.method === 'GET') return send(200, await executeAiCommand('status'))
-        if (url.pathname === '/v1/library' && req.method === 'GET') {
-          return send(200, await executeAiCommand('librarySearch', {
-            query: url.searchParams.get('query') || '',
-            limit: Number(url.searchParams.get('limit')) || 20,
-          }))
+    const tryPort = (port, remaining) => {
+      const server = http.createServer(async (req, res) => {
+        const send = (status, data) => {
+          res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*' })
+          res.end(JSON.stringify(data))
         }
-        if (url.pathname === '/v1/command' && req.method === 'POST') {
-          let body = ''
-          for await (const chunk of req) body += chunk
-          const payload = JSON.parse(body || '{}')
-          return send(200, await executeAiCommand(String(payload.action || ''), payload.args || {}))
+        try {
+          const token = req.headers['x-lsa-token'] || String(req.headers.authorization || '').replace(/^Bearer\s+/i, '')
+          if (token !== aiConfig.token) return send(401, { ok: false, error: 'unauthorized' })
+          const url = new URL(req.url, `http://127.0.0.1:${aiConfig.port}`)
+          if (url.pathname === '/v1/health') return send(200, { ok: true, service: 'lsa-ai-control', version: '1' })
+          if (url.pathname === '/v1/status' && req.method === 'GET') return send(200, await executeAiCommand('status'))
+          if (url.pathname === '/v1/library' && req.method === 'GET') {
+            return send(200, await executeAiCommand('librarySearch', {
+              query: url.searchParams.get('query') || '',
+              limit: Number(url.searchParams.get('limit')) || 20,
+            }))
+          }
+          if (url.pathname === '/v1/command' && req.method === 'POST') {
+            let body = ''
+            for await (const chunk of req) body += chunk
+            const payload = JSON.parse(body || '{}')
+            return send(200, await executeAiCommand(String(payload.action || ''), payload.args || {}))
+          }
+          return send(404, { ok: false, error: 'not found' })
+        } catch (error) {
+          send(500, { ok: false, error: error.message })
         }
-        return send(404, { ok: false, error: 'not found' })
-      } catch (error) {
-        send(500, { ok: false, error: error.message })
-      }
-    })
-    server.once('error', (error) => {
-      aiLastError = error.message
-      try { server.close() } catch { }
-      resolve(aiStatus())
-    })
-    server.listen(aiConfig.port, '127.0.0.1', () => {
-      aiServer = server
-      resolve(aiStatus())
-    })
+      })
+      server.once('error', (error) => {
+        try { server.close() } catch { }
+        if (error.code === 'EADDRINUSE' && remaining > 0) {
+          tryPort(port + 1, remaining - 1)
+          return
+        }
+        aiLastError = error.message
+        aiStarting = false
+        resolve(aiStatus())
+      })
+      server.listen(port, '127.0.0.1', () => {
+        aiServer = server
+        aiConfig.port = port
+        aiStarting = false
+        fsp.writeFile(AI_CONFIG_PATH, JSON.stringify(aiConfig, null, 2), 'utf8').catch(() => {})
+        resolve(aiStatus())
+      })
+    }
+    tryPort(preferred, 24)
   })
 }
 
@@ -770,6 +785,11 @@ async function handleCommand(cmd, args) {
     case 'getAiControlStatus':
       return aiStatus()
     case 'setAiControlEnabled': {
+      const requestedPort = Number(args?.port)
+      if (Number.isInteger(requestedPort) && requestedPort >= 1 && requestedPort <= 65535 && requestedPort !== aiConfig.port) {
+        stopAiServer()
+        aiConfig.port = requestedPort
+      }
       aiConfig.enabled = !!args?.enabled
       await fsp.writeFile(AI_CONFIG_PATH, JSON.stringify(aiConfig, null, 2), 'utf8')
       if (aiConfig.enabled) await startAiServer()
@@ -977,6 +997,7 @@ app.on('before-quit', () => {
     try { audioServer.close() } catch { }
   }
 })
+
 
 
 

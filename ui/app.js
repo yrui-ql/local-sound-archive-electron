@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 /* ---------- tiny utils ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -2768,17 +2768,28 @@ async function loadAiControl() {
   $('#aiControlBadge').classList.toggle('accent', on);
   $('#aiControlState').textContent = on ? ('127.0.0.1:' + data.port) : (data.error || '未开启');
   $('#btnAiControlToggle').textContent = data.enabled ? '关闭' : '开启';
+  $('#aiControlPort').value = String(data.port || 18765);
 }
 async function toggleAiControl() {
   const current = state.aiControl;
   const next = !(current && current.enabled);
-  const res = await call('setAiControlEnabled', { enabled: next }).catch(() => null);
+  const port = Number($('#aiControlPort').value);
+  const res = await call('setAiControlEnabled', { enabled: next, port: Number.isInteger(port) ? port : undefined }).catch(() => null);
   if (res && res.ok) {
     toast(next ? 'AI 控制已开启' : 'AI 控制已关闭', 'ok');
     loadAiControl();
   } else toast((res && res.error) || 'AI 控制切换失败', 'err');
 }
 $('#btnAiControlToggle').addEventListener('click', toggleAiControl);
+$('#btnApplyAiPort').addEventListener('click', async () => {
+  const port = Number($('#aiControlPort').value);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) { toast('端口必须是 1 到 65535', 'err'); return }
+  const res = await call('setAiControlEnabled', { enabled: true, port }).catch(() => null);
+  if (res && res.ok) {
+    toast('MCP 端口已应用：' + res.port, 'ok');
+    loadAiControl();
+  } else toast('端口应用失败：' + ((res && res.error) || '未知错误'), 'err');
+});
 $('#btnCopyMcpConfig').addEventListener('click', async () => {
   const res = await call('copyAiMcpConfig').catch(() => null);
   if (res && res.ok) toast('MCP 配置已复制', 'ok');

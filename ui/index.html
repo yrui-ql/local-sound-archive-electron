@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>留声 · LSA</title>
-<link rel="stylesheet" href="app.css?v=20261031-22">
+<link rel="stylesheet" href="app.css?v=20261031-23">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -369,6 +369,8 @@
               <button id="btnAiControlToggle" class="btn ghost small">开启</button>
             </div>
             <div class="path-row"><span>MCP</span><button id="btnCopyMcpConfig" class="btn ghost small">复制配置</button><button id="btnOpenAiControlDocs" class="btn ghost small">说明</button></div>
+            <div class="path-row"><span>端口</span><input id="aiControlPort" class="port-input" type="number" min="1" max="65535" inputmode="numeric" aria-label="MCP 服务端口"><button id="btnApplyAiPort" class="btn ghost small">应用</button></div>
+            <p class="small-text">端口被占用时自动顺延到下一个可用端口。</p>
           </section>
           <section class="panel">
             <div class="panel-head"><div><h2>关于</h2><p>本机版本</p></div><span class="badge">v3.0</span></div>
@@ -545,9 +547,10 @@
 </div>
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=4"></script>
-<script src="app.js?v=20261031-20"></script>
+<script src="app.js?v=20261031-21"></script>
 </body>
 </html>
+
 
 
 
