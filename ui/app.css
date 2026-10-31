@@ -2682,3 +2682,12 @@ select.native-select {
   .status-pill.status-downloading::before { animation: none; border-right-color: currentColor; }
   .status-pill.status-downloading::after { animation: none; opacity: 0; }
 }
+
+/* Current track uses an explicit animated equalizer; never a pause/mute glyph. */
+.row-leading .row-play { border: 0 !important; }
+.row.playing.is-audible .row-leading .row-play { display: none !important; }
+.row.playing.is-audible .row-leading .row-eq { display: flex !important; }
+.row-leading .row-eq { gap: 3px; }
+.row-leading .row-eq i { display: block; width: 3px; height: 8px; border-radius: 2px; background: currentColor; }
+.row-leading .row-eq i:nth-child(2) { height: 13px; }
+.row-leading .row-eq i:nth-child(3) { height: 7px; }
