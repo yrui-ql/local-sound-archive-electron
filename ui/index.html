@@ -14,7 +14,7 @@ try {
   }
 } catch (error) {}
 </script>
-<link rel="stylesheet" href="app.css?v=20261031-83">
+<link rel="stylesheet" href="app.css?v=20261031-84">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -237,9 +237,9 @@ try {
           <div id="likesStatus" class="quick-status" role="status"></div>
         </section>
         <section class="panel">
-          <div class="panel-head"><div><h2>来源</h2><p>扩展提供 · 登录后同步</p></div><button class="info-btn" data-tip="来源、登录方式和喜欢同步任务由扩展声明；核心只在这里接入扩展提供的能力。" aria-label="扩展来源说明"><svg class="icon"><use href="#i-info"/></svg></button></div>
+          <div class="panel-head"><div><h2>来源</h2><p>登录后才会同步</p></div><button class="info-btn" data-tip="汽水复用本机客户端登录态；网易云、QQ 需要在「设置 → 管理」扫码或配置 Cookie。未登录的平台会在动态里标记为跳过，不会中断其它平台。" aria-label="来源说明"><svg class="icon"><use href="#i-info"/></svg></button></div>
           <div id="likesSources" class="likes-sources"></div>
-          <div class="likes-tip">连接账号和同步喜欢都来自扩展能力；没有安装扩展时这里为空。</div>
+          <div class="likes-tip">第一次使用建议先开「补齐历史喜欢」跑一次，之后只同步新增红心。</div>
         </section>
       </div>
       <div class="panel likes-log">
@@ -619,10 +619,11 @@ try {
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=9"></script>
 <script src="pure.js?v=3"></script>
-<script src="app.js?v=20261031-70"></script>
+<script src="app.js?v=20261031-71"></script>
 <script src="custom-select.js?v=1"></script>
 </body>
 </html>
+
 
 
 

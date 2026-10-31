@@ -2673,12 +2673,17 @@ async function loadLikes() {
     state.likes = { error: err.message };
     renderLikes();
   }
-  loadLikeSources();
 }
 function renderLikes() {
   const data = state.likes;
-  if (!data) return;
-  if (data.error) return;
+  if (!data) {
+    $('#likesSources').innerHTML = '<div class="empty" style="min-height:120px"><span>加载同步状态…</span></div>';
+    return;
+  }
+  if (data.error) {
+    $('#likesSources').innerHTML = emptyState('info', '无法读取同步状态', data.error);
+    return;
+  }
   const cfg = data.config || {};
   $('#likesEnabled').checked = !!cfg.enabled;
   $('#likesInterval').value = String(cfg.intervalHours || 24);
@@ -2699,12 +2704,28 @@ function renderLikes() {
   if (state.likesRunning) { pill.textContent = '同步中'; pill.className = 'status-pill status-downloading'; }
   else if (cfg.pendingImport) { pill.textContent = '等待入库'; pill.className = 'status-pill status-waiting'; }
   else { pill.textContent = '空闲'; pill.className = 'status-pill status-skipped'; }
+  renderLikeSources(data.sources || [], data.cookies || {});
   renderLikeEvents(data.events || []);
   const results = (data.lastRun && data.lastRun.results) || [];
   const newCount = results.reduce((n, r) => n + (r.newCount || 0), 0);
   const badge = $('#navLikes');
   badge.textContent = String(newCount);
   badge.classList.toggle('hidden', !newCount);
+}
+function renderLikeSources(sources, cookies) {
+  $('#likesSources').innerHTML = sources.map((s) => {
+    const connected = !!s.connected;
+    const detail = connected
+      ? (s.likedTotal ? '喜欢 ' + s.likedTotal + ' 首 · ' + (s.lastSync ? '上次 ' + fmtDate(s.lastSync) : '尚未同步') + (!s.backfilled ? ' · 历史待补齐' : '') : '已登录 · 待首次同步')
+      : '未配置登录态';
+    return '<div class="source-row">' +
+      '<div class="source-mark">' + icon(s.id === 'soda' ? 'disc' : s.id === 'netease' ? 'search' : 'queue') + '</div>' +
+      '<div class="source-copy"><strong>' + esc(s.name || LIKE_SOURCE_META[s.id] || s.id) + '</strong><p title="' + esc(detail) + '">' + esc(detail) + '</p></div>' +
+      '<span class="source-state ' + (connected ? 'on' : '') + '">' + (connected ? '已连接' : '未登录') + '</span>' +
+      '<button class="btn ghost" data-like-manage="' + esc(s.id) + '">' + (connected ? '管理' : '登录') + '</button>' +
+      '</div>';
+  }).join('');
+  $('#likesSources').querySelectorAll('[data-like-manage]').forEach((b) => b.addEventListener('click', () => openAccounts(b.dataset.likeManage)));
 }
 function renderLikeEvents(events) {
   const box = $('#likesEvents');
@@ -3636,61 +3657,3 @@ $('#btnPodcastLocal')?.addEventListener('click', () => {
   renderPodcastSidebar();
   renderPodcastDetail();
 });
-
-
-async function loadLikeSources() {
-  const box = $('#likesSources');
-  if (!box) return;
-  box.innerHTML = '<div class="empty" style="min-height:110px"><span>正在读取扩展来源…</span></div>';
-  try {
-    const data = await call('getExtensions');
-    const extensions = (data.extensions || []).filter((ext) => ext.enabled && !data.safeMode);
-    const entries = [];
-    for (const ext of extensions) {
-      for (const source of Array.isArray(ext.sources) ? ext.sources : []) {
-        const auth = Array.isArray(source.auth) ? source.auth.length > 0 : !!source.auth;
-        if (!auth && !source.likes) continue;
-        entries.push({ extension: ext, source, auth, likes: !!source.likes });
-      }
-    }
-    if (!entries.length) {
-      box.innerHTML = emptyState('info', '没有可用的来源扩展', '在「扩展」里启用一个来源扩展，账号连接和喜欢同步入口会出现在这里。');
-      return;
-    }
-    box.innerHTML = entries.map(({ extension, source, auth, likes }) => '<div class="source-row">' +
-      '<div class="source-mark">' + icon('plug') + '</div>' +
-      '<div class="source-copy"><strong>' + esc(source.name || extension.name || extension.id) + '</strong><p>扩展来源 · ' + (auth ? '可连接账号' : '免登录') + (likes ? ' · 可同步喜欢' : '') + '</p></div>' +
-      '<span class="source-state on">扩展</span>' +
-      (auth ? '<button class="btn ghost" data-like-connect="' + esc(extension.id) + '">连接账号</button>' : '') +
-      (likes ? '<button class="btn ghost" data-like-sync="' + esc(extension.id) + '">同步喜欢</button>' : '') +
-      '</div>').join('');
-    box.querySelectorAll('[data-like-connect]').forEach((button) => button.addEventListener('click', async () => {
-      const id = button.dataset.likeConnect;
-      const extension = extensions.find((ext) => ext.id === id);
-      button.disabled = true; button.textContent = '连接中…';
-      try {
-        const response = await call('extensionInvoke', { id, method: 'auth.begin', params: {}, timeoutMs: 120000 }).catch((error) => ({ ok: false, error: error.message }));
-        if (!response || !response.ok) throw new Error((response && response.error) || '连接失败');
-        const result = response.result || {};
-        if (result.url || result.image_url) await openExtensionAuth(extension || { id, name: id }, result);
-        else toast(result.message || '账号已连接', 'ok');
-      } catch (error) { toast('连接失败：' + error.message, 'err'); }
-      finally { button.disabled = false; button.textContent = '连接账号'; }
-    }));
-    box.querySelectorAll('[data-like-sync]').forEach((button) => button.addEventListener('click', async () => {
-      const id = button.dataset.likeSync;
-      button.disabled = true; button.textContent = '同步中…';
-      try {
-        const response = await call('extensionInvoke', { id, method: 'likes.sync', params: {}, timeoutMs: 600000 }).catch((error) => ({ ok: false, error: error.message }));
-        if (!response || !response.ok) throw new Error((response && response.error) || '同步失败');
-        const result = response.result || {};
-        toast('喜欢同步：共 ' + (result.total || 0) + ' 首，新增 ' + (result.fresh || 0) + '，入队 ' + (result.queued || 0), 'ok');
-        loadLikeSources();
-      } catch (error) { toast('喜欢同步失败：' + error.message, 'err'); }
-      finally { button.disabled = false; button.textContent = '同步喜欢'; }
-    }));
-  } catch (error) {
-    box.innerHTML = emptyState('info', '无法读取扩展来源', error.message);
-  }
-}
-
