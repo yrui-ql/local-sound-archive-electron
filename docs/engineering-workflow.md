@@ -23,13 +23,23 @@ For Electron questions, check at least:
 
 - the Electron process model and security guidance;
 - an established project-structure reference;
-- the upstream library/package source or release notes.
+- the upstream library/package source or release notes;
+- **at least one real open-source project using the same stack**, inspected at the repository-tree/code level — not only a blog post or summary.
+
+For the last item, record:
+
+- repository URL and the exact directories inspected;
+- what the project separated (process, service, window, feature, shared code);
+- what pattern LSA adopts and what it rejects, with a reason.
+
+The current case studies live in [reference-architectures.md](reference-architectures.md). Update that file when a new stack/architecture decision is made.
 
 Useful references:
 
 - [Electron project structure reference](https://github.com/jwynia/agent-skills/blob/main/skills/tech/development/tooling/electron-best-practices/references/architecture/project-structure.md)
 - [Electron process separation](https://github.com/jwynia/agent-skills/blob/main/skills/tech/development/tooling/electron-best-practices/references/architecture/process-separation.md)
 - [Electron security checklist](https://github.com/jwynia/agent-skills/blob/main/skills/tech/development/tooling/electron-best-practices/references/security/security-checklist.md)
+- [VS Code](https://github.com/microsoft/vscode), [FreeTube](https://github.com/FreeTubeApp/FreeTube), [Joplin](https://github.com/laurent22/joplin), [Zettlr](https://github.com/Zettlr/Zettlr)
 
 Record the decision and trade-offs in `docs/adr/`. Do not leave architecture decisions only in chat.
 

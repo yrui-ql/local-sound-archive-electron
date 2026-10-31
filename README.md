@@ -106,6 +106,7 @@ docs/                   架构、工作流、ADR 与截图
 
 - [docs/architecture.md](docs/architecture.md)
 - [docs/engineering-workflow.md](docs/engineering-workflow.md)
+- [开源项目参考架构](docs/reference-architectures.md)
 - [产品反思](docs/product-reflection-2026-10-31.md)
 - [功能交付清单](docs/checklists/feature-delivery.md)
 
