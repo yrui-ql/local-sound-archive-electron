@@ -39,6 +39,35 @@
     return { previous, history: list }
   }
 
+  function recentByteLength(value) {
+    const text = typeof value === 'string' ? value : JSON.stringify(value)
+    if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(text).length
+    return text.length * 2
+  }
+
+  function pruneRecent(items, options = {}) {
+    const maxItems = Math.max(1, Math.min(500, Number(options.maxItems) || 60))
+    const maxAgeDays = Math.max(1, Math.min(3650, Number(options.maxAgeDays) || 30))
+    const maxBytes = Math.max(1024, Math.min(20 * 1024 * 1024, Number(options.maxBytes) || 512 * 1024))
+    const now = Number(options.now) || Date.now()
+    const cutoff = now - maxAgeDays * 86400000
+    const seen = new Set()
+    const result = []
+    let bytes = 0
+    for (const item of Array.isArray(items) ? items : []) {
+      if (!item || !item.url || seen.has(item.url)) continue
+      const at = Date.parse(item.at || '')
+      if (Number.isFinite(at) && at < cutoff) continue
+      const size = recentByteLength(item)
+      if (result.length && bytes + size > maxBytes) break
+      seen.add(item.url)
+      result.push(item)
+      bytes += size
+      if (result.length >= maxItems) break
+    }
+    return result
+  }
+
   function smoothSeekTime(display, target, elapsed = 0, playbackRate = 1) {
     let next = Number(display) || 0
     if (!Number.isFinite(Number(target))) return next
@@ -50,6 +79,7 @@
     return next
   }
 
-  return { clampUiScale, filterSearchEntries, pushHistory, popHistory, smoothSeekTime }
+  return { clampUiScale, filterSearchEntries, pushHistory, popHistory, smoothSeekTime, pruneRecent }
 })
+
 

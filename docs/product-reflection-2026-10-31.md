@@ -183,3 +183,9 @@
 
 - 播放按钮的缩放动效被 `.player-center { overflow: hidden }` 裁掉上下边缘。
 - 已解除 player-center、transport、transport-play 的 overflow 限制；实测 hover 后 transform 1.035，上下命中点仍返回 btnPlay，不再裁切。
+
+## 追加（播放记录无上限）
+
+- 最近播放之前固定 60 条，没有天数/大小上限，也不能配置。
+- 已改为设置页可配置：最多条数、保留天数、存储 KB；读写时都裁剪，按最旧记录清理。
+- 新增 `pruneRecent` 纯函数和 29 项测试覆盖。

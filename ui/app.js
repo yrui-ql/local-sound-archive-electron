@@ -557,14 +557,42 @@ function filteredLibrary() {
 
 /* ---------- recently played ---------- */
 const RECENT_KEY = 'musicArchiveRecent';
+const RECENT_LIMIT_KEY = 'musicArchiveRecentLimit';
+const RECENT_DAYS_KEY = 'musicArchiveRecentDays';
+const RECENT_BYTES_KEY = 'musicArchiveRecentBytes';
+const RECENT_DEFAULTS = { maxItems: 60, maxAgeDays: 30, maxBytes: 512 * 1024 };
+function recentSettings() {
+  const read = (key, fallback) => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw === null || raw === '') return fallback;
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : fallback;
+    } catch { return fallback; }
+  };
+  return {
+    maxItems: Math.max(10, Math.min(500, Math.round(read(RECENT_LIMIT_KEY, RECENT_DEFAULTS.maxItems)))),
+    maxAgeDays: Math.max(1, Math.min(3650, Math.round(read(RECENT_DAYS_KEY, RECENT_DEFAULTS.maxAgeDays)))),
+    maxBytes: Math.max(64 * 1024, Math.min(20 * 1024 * 1024, Math.round(read(RECENT_BYTES_KEY, RECENT_DEFAULTS.maxBytes)))),
+  };
+}
+function pruneRecentItems(items, now = Date.now()) {
+  const limits = recentSettings();
+  return window.LSAPure
+    ? window.LSAPure.pruneRecent(items, { ...limits, now })
+    : items.slice(0, limits.maxItems);
+}
 function readRecent() {
   try {
     const value = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
-    return Array.isArray(value) ? value.filter((x) => x && x.url).slice(0, 60) : [];
+    return pruneRecentItems(Array.isArray(value) ? value.filter((x) => x && x.url) : []);
   } catch { return []; }
 }
 function saveRecent() {
-  try { localStorage.setItem(RECENT_KEY, JSON.stringify(state.recent.slice(0, 60))); } catch { }
+  try {
+    state.recent = pruneRecentItems(state.recent);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(state.recent));
+  } catch { }
 }
 function recordRecent(track) {
   if (!track || !track.url) return;
@@ -573,7 +601,6 @@ function recordRecent(track) {
     url: track.url, id: track.id || '', path: track.path || '', title: track.title || '', artist: track.artist || '', album: track.album || '',
     size: track.size || 0, ext: track.ext || '', addedAt: track.addedAt || '', at: new Date().toISOString(),
   });
-  state.recent = state.recent.slice(0, 60);
   saveRecent();
   if (state.page === 'recent') renderRecent();
 }
@@ -620,7 +647,7 @@ function renderRecent() {
   const list = $('#recentList');
   if (!list) return;
   $('#recentCount').textContent = state.recent.length ? state.recent.length + ' 首' : '';
-  $('#recentSub').textContent = state.recent.length ? '本机记录，最近 ' + state.recent.length + ' 首' : '本机记录，最近 60 首';
+  $('#recentSub').textContent = state.recent.length ? '本机记录，最近 ' + state.recent.length + ' 首' : '本机记录，上限 ' + recentSettings().maxItems + ' 首';
   if (!state.recent.length) {
     list.innerHTML = '<div class="recent-empty">' + icon('history') + '<b>还没有播放记录</b><span>在音乐库里双击一首歌，之后可以从这里继续播放。</span></div>';
     return;
@@ -3343,6 +3370,8 @@ document.addEventListener('keydown', (e) => {
   loadSearchSources();
   loadPlayerPrefs();
   state.recent = readRecent();
+  initRecentSettings();
+  saveRecent();
   $$('.info-btn').forEach((b) => { b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', 'infoPopover'); });
   $('#libSkeleton').innerHTML = skeletonRows(10);
   $('#searchSkeleton').classList.add('hidden');
@@ -3389,4 +3418,36 @@ document.addEventListener('keydown', (e) => {
 
 
 
+
+
+function renderRecentSettingsForm() {
+  const limits = recentSettings();
+  const items = $('#recentMaxItems');
+  const days = $('#recentMaxDays');
+  const kb = $('#recentMaxKb');
+  if (!items || !days || !kb) return;
+  items.value = String(limits.maxItems);
+  days.value = String(limits.maxAgeDays);
+  kb.value = String(Math.round(limits.maxBytes / 1024));
+  const hint = $('#recentLimitHint');
+  if (hint) hint.textContent = '当前 ' + state.recent.length + ' 条 · ' + limits.maxAgeDays + ' 天 · ' + Math.round(limits.maxBytes / 1024) + ' KB';
+}
+function initRecentSettings() {
+  renderRecentSettingsForm();
+  $('#btnApplyRecentLimits')?.addEventListener('click', () => {
+    const maxItems = Math.max(10, Math.min(500, Math.round(Number($('#recentMaxItems').value) || RECENT_DEFAULTS.maxItems)));
+    const maxAgeDays = Math.max(1, Math.min(3650, Math.round(Number($('#recentMaxDays').value) || RECENT_DEFAULTS.maxAgeDays)));
+    const maxKb = Math.max(64, Math.min(20480, Math.round(Number($('#recentMaxKb').value) || 512)));
+    try {
+      localStorage.setItem(RECENT_LIMIT_KEY, String(maxItems));
+      localStorage.setItem(RECENT_DAYS_KEY, String(maxAgeDays));
+      localStorage.setItem(RECENT_BYTES_KEY, String(maxKb * 1024));
+    } catch { }
+    state.recent = pruneRecentItems(state.recent);
+    saveRecent();
+    renderRecentSettingsForm();
+    if (state.page === 'recent') renderRecent();
+    toast('播放记录限制已应用：' + maxItems + ' 条 / ' + maxAgeDays + ' 天 / ' + maxKb + ' KB', 'ok');
+  });
+}
 
