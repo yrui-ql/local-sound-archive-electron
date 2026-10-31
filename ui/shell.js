@@ -50,3 +50,69 @@ if (drag && desktop) {
     }, 900))
   }, true)
 })()
+/* Screen/system-audio recording. The host only owns state and file writes. */
+let recorder = null
+let captureStream = null
+let recordChunks = []
+const recordHost = window.lsaDesktop && window.lsaDesktop.host
+
+function recordName() {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  return '录音-' + stamp
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '')
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
+}
+
+async function startScreenRecording() {
+  if (recorder) return
+  try {
+    captureStream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 1 }, audio: true })
+    const audioTracks = captureStream.getAudioTracks()
+    if (!audioTracks.length) throw new Error('没有捕获到系统声音')
+    const audioStream = new MediaStream(audioTracks)
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm'
+    recordChunks = []
+    recorder = new MediaRecorder(audioStream, { mimeType })
+    recorder.ondataavailable = (event) => { if (event.data && event.data.size) recordChunks.push(event.data) }
+    recorder.onstop = async () => {
+      try {
+        const blob = new Blob(recordChunks, { type: mimeType })
+        const data = await blobToBase64(blob)
+        recordHost?.postMessage({ cmd: 'recordData', args: { name: recordName(), ext: 'webm', data } })
+      } catch (error) {
+        recordHost?.postMessage({ cmd: 'recordFail', args: { error: error.message } })
+      } finally {
+        captureStream?.getTracks().forEach((track) => track.stop())
+        captureStream = null
+        recorder = null
+      }
+    }
+    recorder.start(1000)
+  } catch (error) {
+    captureStream?.getTracks().forEach((track) => track.stop())
+    captureStream = null
+    recorder = null
+    recordHost?.postMessage({ cmd: 'recordFail', args: { error: error.message } })
+  }
+}
+
+function stopScreenRecording() {
+  if (recorder && recorder.state !== 'inactive') recorder.stop()
+  else captureStream?.getTracks().forEach((track) => track.stop())
+}
+
+if (recordHost && recordHost.addEventListener) {
+  recordHost.addEventListener('message', (event) => {
+    const message = event && event.data ? event.data : event
+    if (!message || !message.type) return
+    if (message.type === 'record-start') startScreenRecording()
+    if (message.type === 'record-stop') stopScreenRecording()
+  })
+}

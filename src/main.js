@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
+﻿const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session } = require('electron')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const http = require('node:http')
@@ -510,6 +510,46 @@ async function openLikesReport() {
   return error ? { ok: false, error } : { ok: true }
 }
 
+let recordingState = { active: false, startedAt: 0, stoppedAt: 0 }
+
+function recordingsDir() {
+  return path.join(DATA_DIR, 'recordings')
+}
+
+function postHostEvent(type, data = {}) {
+  if (!mainWindow || !mainWindow.webContents) return
+  mainWindow.webContents.send('host-event', { type, ...data })
+}
+
+async function listRecordings() {
+  await fsp.mkdir(recordingsDir(), { recursive: true }).catch(() => {})
+  const files = []
+  try {
+    for (const entry of await fsp.readdir(recordingsDir(), { withFileTypes: true })) {
+      if (!entry.isFile() || !/\.(webm|wav|mp3|m4a)$/i.test(entry.name)) continue
+      const file = path.join(recordingsDir(), entry.name)
+      const stat = await fsp.stat(file)
+      files.push({ name: entry.name, size: stat.size, mtime: stat.mtimeMs })
+    }
+  } catch { }
+  return { files: files.sort((a, b) => b.mtime - a.mtime), dir: recordingsDir() }
+}
+
+async function saveRecording(args) {
+  try {
+    const ext = String(args?.ext || 'webm').replace(/[^a-z0-9]/gi, '') || 'webm'
+    const name = String(args?.name || '').replace(/[\\/:*?"<>|]/g, '_') || ('录音-' + new Date().toISOString().replace(/[:.]/g, '-') + '.' + ext)
+    await fsp.mkdir(recordingsDir(), { recursive: true })
+    const target = path.join(recordingsDir(), name.endsWith('.' + ext) ? name : name + '.' + ext)
+    await fsp.writeFile(target, Buffer.from(String(args?.data || ''), 'base64'))
+    recordingState = { active: false, startedAt: 0, stoppedAt: Date.now() }
+    return { ok: true, path: target }
+  } catch (error) {
+    recordingState = { active: false, startedAt: 0, stoppedAt: Date.now() }
+    return { ok: false, error: error.message }
+  }
+}
+
 async function handleCommand(cmd, args) {
   switch (cmd) {
     case 'ready':
@@ -541,7 +581,27 @@ async function handleCommand(cmd, args) {
     case 'downloadAction':
       return downloadAction(args)
     case 'recordings':
-      return { items: [] }
+      return listRecordings()
+    case 'recordStart':
+      if (recordingState.active) return { ok: false, error: '正在录音' }
+      await fsp.mkdir(recordingsDir(), { recursive: true }).catch(() => {})
+      recordingState = { active: true, startedAt: Date.now(), stoppedAt: 0 }
+      postHostEvent('record-start')
+      return { ok: true }
+    case 'recordStop':
+      postHostEvent('record-stop')
+      recordingState = { ...recordingState, active: false, stoppedAt: Date.now() }
+      return { ok: true }
+    case 'recordStatus':
+      return {
+        recording: recordingState.active,
+        seconds: recordingState.active ? Math.max(0, Math.floor((Date.now() - recordingState.startedAt) / 1000)) : 0,
+      }
+    case 'recordData':
+      return saveRecording(args)
+    case 'recordFail':
+      recordingState = { active: false, startedAt: 0, stoppedAt: Date.now() }
+      return { ok: false, error: String(args?.error || '录音失败') }
     case 'getLikes': {
       await accountService.refreshSoda()
       const status = await likesStore.status()
@@ -639,7 +699,7 @@ async function handleCommand(cmd, args) {
     }
     case 'openFolder': {
       const kind = String(args?.kind || '')
-      const target = kind === 'data' ? DATA_DIR : (musicDirs[0] || app.getPath('music'))
+      const target = kind === 'recordings' ? recordingsDir() : (kind === 'data' ? DATA_DIR : (musicDirs[0] || app.getPath('music')))
       const error = await shell.openPath(target)
       return error ? { ok: false, error } : { ok: true, path: target }
     }
@@ -768,6 +828,15 @@ ipcMain.handle('window-action', (event, action) => {
 })
 
 app.whenReady().then(async () => {
+  session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen'] })
+      if (!sources.length) return callback({})
+      callback({ video: sources[0], audio: process.platform === 'win32' ? 'loopback' : true })
+    } catch {
+      callback({})
+    }
+  })
   await loadConfig()
   await loadAiConfig()
   await startAudioServer()
@@ -788,6 +857,9 @@ app.on('before-quit', () => {
     try { audioServer.close() } catch { }
   }
 })
+
+
+
 
 
 
