@@ -2631,7 +2631,7 @@ select.native-select {
 .custom-select-option.selected::after { content: '✓'; margin-left: auto; color: var(--ui-accent, var(--accent)); font-size: 11px; }
 
 /* Library row: play/control lives in the leading slot, not at the far right. */
-.lib-grid { grid-template-columns: 34px minmax(220px, 2.3fr) minmax(120px, 1.2fr) 64px 72px; }
+.lib-grid { grid-template-columns: 34px minmax(220px, 2.3fr) 64px 64px 72px; }
 .row-leading { position: relative; width: 34px; height: 34px; display: grid; place-items: center; }
 .row-leading .idx { position: absolute; inset: 0; display: grid; place-items: center; transition: opacity .14s ease; }
 .row-leading .row-play {

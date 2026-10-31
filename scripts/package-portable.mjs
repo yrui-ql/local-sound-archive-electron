@@ -2,7 +2,7 @@
 /** Build a self-contained Windows portable folder from the local Electron dist. */
 import fs from 'node:fs'
 import path from 'node:path'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -23,9 +23,26 @@ for (const name of ['src', 'ui', 'ai-control', 'extension-sdk', 'scripts', 'buil
 }
 fs.copyFileSync(path.join(root, 'package.json'), path.join(app, 'package.json'))
 const appModules = path.join(app, 'node_modules')
-for (const name of ['qrcode', 'dijkstrajs', 'pngjs']) {
-  const source = path.join(root, 'node_modules', name)
-  if (fs.existsSync(source)) fs.cpSync(source, path.join(appModules, name), { recursive: true })
+let dependencyList = ''
+try {
+  dependencyList = execSync('npm ls --omit=dev --parseable --all', {
+    cwd: root,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  })
+} catch (error) {
+  dependencyList = String(error.stdout || '')
+}
+for (const line of dependencyList.split(/\r?\n/)) {
+  const marker = 'node_modules' + path.sep
+  const index = line.indexOf(marker)
+  if (index < 0) continue
+  const relative = line.slice(index + marker.length)
+  const source = line.trim()
+  const destination = path.join(appModules, relative)
+  if (!relative || !fs.existsSync(source) || fs.existsSync(destination)) continue
+  fs.mkdirSync(path.dirname(destination), { recursive: true })
+  fs.cpSync(source, destination, { recursive: true })
 }
 const exe = path.join(out, 'electron.exe')
 if (!fs.existsSync(exe)) throw new Error('electron.exe missing')
@@ -44,6 +61,7 @@ if (fs.existsSync(rcedit) && fs.existsSync(ico)) {
 }
 
 console.log('portable build:', targetExe)
+
 
 
 

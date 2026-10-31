@@ -126,13 +126,17 @@ function audioUrlFor(file) {
   return `http://127.0.0.1:${audioPort}/audio/${audioToken}/${id}`
 }
 
-function cleanDisplayTitle(file) {
-  const raw = path.basename(file, path.extname(file))
+function cleanTitleText(value) {
+  const raw = String(value || '').trim()
   return raw
     .replace(/^\s*\d{1,3}\s*[._\-–—、]\s*/, '')
     .replace(/^\s*\d{1,3}\s+(?=\S)/, '')
     .replace(/^\s*\d{1,3}\s*(?=[《【\[])/, '')
     .trim() || raw
+}
+
+function cleanDisplayTitle(file) {
+  return cleanTitleText(path.basename(file, path.extname(file)))
 }
 
 function publicTrack(file, root) {
@@ -184,6 +188,7 @@ async function buildLibrary() {
     totalBytes += Number(track.size) || 0
     tracks.push(track)
   }
+  for (const track of tracks) track.title = cleanTitleText(track.title)
   if (libraryStore) libraryStore.replaceTracks(tracks)
   return { tracks, formats, totalBytes, libraryRoot: musicDirs[0] || '' }
 }
@@ -1054,6 +1059,8 @@ app.on('before-quit', () => {
     try { audioServer.close() } catch { }
   }
 })
+
+
 
 
 

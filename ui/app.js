@@ -317,6 +317,11 @@ function formatSize(bytes) {
   while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
   return (n >= 10 ? n.toFixed(0) : n.toFixed(1)) + ' ' + units[i];
 }
+function formatDateShort(value) {
+  const date = new Date(Number(value));
+  if (!Number.isFinite(date.getTime())) return '—';
+  return date.toLocaleDateString('zh-CN', { year: '2-digit', month: '2-digit', day: '2-digit' });
+}
 function formatTime(sec) {
   sec = Math.max(0, Math.floor(sec || 0));
   return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
@@ -655,13 +660,13 @@ function renderLibrary() {
     list.innerHTML = shown.map((t, i) => {
       const playing = currentUrl === t.url;
       const selected = state.selectedTrack === t.url;
-      const dur = t.duration ? formatTime(t.duration) : '';
+      const date = formatDateShort(t.mtime);
       return '<div class="row lib-grid' + (playing ? ' playing' : '') + (playing && state.isPlaying ? ' is-audible' : '') + (selected ? ' selected' : '') + '" data-url="' + esc(t.url) + '" tabindex="0" role="option" aria-selected="' + (selected ? 'true' : 'false') + '" aria-label="' + esc(t.title + '，' + t.artist) + '">' +
         '<div class="row-leading"><span class="idx">' + String(i + 1).padStart(2, '0') + '</span><button class="row-play" tabindex="-1" data-play="' + esc(t.url) + '" aria-label="播放 ' + esc(t.title) + '">' + icon('play') + '</button><span class="row-eq" aria-hidden="true"><i></i><i></i><i></i></span></div>' +
         '<div class="cover-cell">' + artMarkup(t.title, t.artist) + '<div class="cell"><div class="cell-title" title="' + esc(t.title) + '">' + esc(t.title) + '</div><div class="cell-sub" title="' + esc(t.artist) + '">' + esc(t.artist) + '</div></div></div>' +
-        '<div class="cell cell-muted col-album" title="' + esc(t.album || '—') + '">' + esc(t.album || '—') + '</div>' +
+        '<div class="cell cell-muted col-date">' + date + '</div>' +
         '<div><span class="badge' + (t.ext === 'flac' ? ' accent' : '') + '">' + esc(t.ext.toUpperCase()) + '</span></div>' +
-        '<div class="cell-muted">' + formatSize(t.size) + (dur ? ' <span class="cell-sub">' + dur + '</span>' : '') + '</div>' +
+        '<div class="cell-muted">' + formatSize(t.size) + '</div>' +
         '</div>';
     }).join('');
   }
