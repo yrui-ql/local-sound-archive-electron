@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>留声 · LSA</title>
-<link rel="stylesheet" href="app.css?v=20261031-35">
+<link rel="stylesheet" href="app.css?v=20261031-36">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -187,7 +187,7 @@
       </header>
       <div class="likes-grid">
         <section class="panel">
-          <div class="panel-head"><div><h2>自动同步</h2><p id="likesScheduleText">客户端运行时在后台执行</p></div><div class="likes-head-actions"><span id="likesRunPill" class="status-pill status-skipped">空闲</span></div></div>
+          <div class="panel-head"><div><h2>自动同步</h2><p id="likesScheduleText">客户端运行时在后台执行</p></div><div class="likes-head-actions"><span id="likesRunPill" class="status-pill status-skipped" role="status" aria-live="polite">空闲</span></div></div>
           <div class="likes-config">
             <label class="switch-row"><span><strong>定时检查</strong><small>只在客户端运行时生效</small></span><input id="likesEnabled" type="checkbox"><i class="switch" aria-hidden="true"></i></label>
             <div class="config-row"><span>间隔</span><select id="likesInterval"><option value="6">每 6 小时</option><option value="12">每 12 小时</option><option value="24">每天</option><option value="72">每 3 天</option></select></div>
@@ -551,6 +551,8 @@
 <script src="custom-select.js?v=1"></script>
 </body>
 </html>
+
+
 
 
 

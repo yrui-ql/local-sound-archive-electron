@@ -2652,3 +2652,33 @@ select.native-select {
 .row.playing.is-audible .row-eq { opacity: 1; }
 @keyframes rowEq { from { transform: scaleY(.55); opacity: .55; } to { transform: scaleY(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .row-eq i { animation: none; } }
+
+/* Long-running states must signal motion, not sit as a static dot. */
+.status-pill.status-downloading {
+  position: relative;
+  overflow: hidden;
+}
+.status-pill.status-downloading::before {
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  background: transparent;
+  animation: lsaStatusSpin .85s linear infinite;
+}
+.status-pill.status-downloading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 25%, color-mix(in srgb, currentColor 14%, transparent) 48%, transparent 70%);
+  transform: translateX(-120%);
+  animation: lsaStatusSweep 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes lsaStatusSpin { to { transform: rotate(360deg); } }
+@keyframes lsaStatusSweep { 0% { transform: translateX(-120%); } 65%, 100% { transform: translateX(120%); } }
+@media (prefers-reduced-motion: reduce) {
+  .status-pill.status-downloading::before { animation: none; border-right-color: currentColor; }
+  .status-pill.status-downloading::after { animation: none; opacity: 0; }
+}
