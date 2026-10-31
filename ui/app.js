@@ -3092,7 +3092,12 @@ async function runLong(cmd, title, text, label) {
     const res = await call(cmd);
     if (res && res.ok) {
       toast(cmd === 'maintain' ? '整理完成' : '解密完成', 'ok');
-      if (res.summary) state.progressEl.textContent = res.summary.split('\n')[0];
+      if (res.summary) {
+        const summary = typeof res.summary === 'string'
+          ? res.summary
+          : (Number(res.summary.tracks) || 0) + ' 首 · ' + formatSize(res.summary.totalBytes || 0);
+        state.progressEl.textContent = summary.split('\n')[0];
+      }
       await loadLibrary();
       await loadRecordings();
     } else toast('任务失败：' + (res && res.error ? res.error : '未知错误'), 'err');

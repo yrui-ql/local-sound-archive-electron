@@ -113,3 +113,9 @@
 - 行首同时放序号和播放按钮，不能靠 opacity 互相淡出；过渡期间两个 glyph 会叠成一团。
 - 现在按状态使用 display 互斥切换：默认序号，hover/focus 播放，播放中 EQ，暂停当前歌曲显示播放。
 - 这类“同一槽位替换”的 UI 必须在真实 hover 状态下截图检查，不能只看静态首屏。
+
+## 追加教训（整理音乐库报错）
+
+- `maintain` 返回的是 summary 对象，renderer 当字符串调用 `.split()`，所以点击后抛 `res.summary.split is not a function`。
+- 已做类型收窄，状态栏显示真实结果：`1366 首 · 95 GB`。
+- 已通过 Electron CDP 在真实应用里调用 `call('maintain')` 验证返回结构，再验证 UI 摘要字符串；不是只跑语法检查。
