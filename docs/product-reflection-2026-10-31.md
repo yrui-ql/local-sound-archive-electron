@@ -178,3 +178,8 @@
 - 用户指出喜欢同步设置里的 info 图标没有气泡。原实现只绑定 `click`，hover/focus 不显示；且图标在 label 内，点击还可能触发表单切换。
 - 现已支持 hover 140ms 后显示、focus 显示、点击固定显示；点击外部/Esc 关闭；气泡从图标下方展开并在靠边时翻转。
 - 实际用 CDP 验证了悬浮气泡文本和位置，点击后不再被同一按钮立即关闭。
+
+## 追加（播放按钮 hover 被裁切）
+
+- 播放按钮的缩放动效被 `.player-center { overflow: hidden }` 裁掉上下边缘。
+- 已解除 player-center、transport、transport-play 的 overflow 限制；实测 hover 后 transform 1.035，上下命中点仍返回 btnPlay，不再裁切。
