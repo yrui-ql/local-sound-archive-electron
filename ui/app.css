@@ -2942,3 +2942,9 @@ html[data-theme="green"] {
   .podcast-detail { min-height: 360px; overflow: visible; }
 }
 
+
+.likes-source-entry { display: flex; align-items: center; gap: 14px; padding: 12px 0 2px; }
+.likes-source-entry > div { flex: 1; min-width: 0; }
+.likes-source-entry b { display: block; color: var(--ui-text, var(--ink)); font-size: 12px; font-weight: 540; }
+.likes-source-entry p { margin: 4px 0 0; color: var(--ui-muted, var(--muted)); font-size: 10.5px; line-height: 1.6; }
+.likes-source-entry .btn { flex: none; }

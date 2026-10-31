@@ -2676,14 +2676,8 @@ async function loadLikes() {
 }
 function renderLikes() {
   const data = state.likes;
-  if (!data) {
-    $('#likesSources').innerHTML = '<div class="empty" style="min-height:120px"><span>加载同步状态…</span></div>';
-    return;
-  }
-  if (data.error) {
-    $('#likesSources').innerHTML = emptyState('info', '无法读取同步状态', data.error);
-    return;
-  }
+  if (!data) return;
+  if (data.error) return;
   const cfg = data.config || {};
   $('#likesEnabled').checked = !!cfg.enabled;
   $('#likesInterval').value = String(cfg.intervalHours || 24);
@@ -2704,28 +2698,12 @@ function renderLikes() {
   if (state.likesRunning) { pill.textContent = '同步中'; pill.className = 'status-pill status-downloading'; }
   else if (cfg.pendingImport) { pill.textContent = '等待入库'; pill.className = 'status-pill status-waiting'; }
   else { pill.textContent = '空闲'; pill.className = 'status-pill status-skipped'; }
-  renderLikeSources(data.sources || [], data.cookies || {});
   renderLikeEvents(data.events || []);
   const results = (data.lastRun && data.lastRun.results) || [];
   const newCount = results.reduce((n, r) => n + (r.newCount || 0), 0);
   const badge = $('#navLikes');
   badge.textContent = String(newCount);
   badge.classList.toggle('hidden', !newCount);
-}
-function renderLikeSources(sources, cookies) {
-  $('#likesSources').innerHTML = sources.map((s) => {
-    const connected = !!s.connected;
-    const detail = connected
-      ? (s.likedTotal ? '喜欢 ' + s.likedTotal + ' 首 · ' + (s.lastSync ? '上次 ' + fmtDate(s.lastSync) : '尚未同步') + (!s.backfilled ? ' · 历史待补齐' : '') : '已登录 · 待首次同步')
-      : '未配置登录态';
-    return '<div class="source-row">' +
-      '<div class="source-mark">' + icon(s.id === 'soda' ? 'disc' : s.id === 'netease' ? 'search' : 'queue') + '</div>' +
-      '<div class="source-copy"><strong>' + esc(s.name || LIKE_SOURCE_META[s.id] || s.id) + '</strong><p title="' + esc(detail) + '">' + esc(detail) + '</p></div>' +
-      '<span class="source-state ' + (connected ? 'on' : '') + '">' + (connected ? '已连接' : '未登录') + '</span>' +
-      '<button class="btn ghost" data-like-manage="' + esc(s.id) + '">' + (connected ? '管理' : '登录') + '</button>' +
-      '</div>';
-  }).join('');
-  $('#likesSources').querySelectorAll('[data-like-manage]').forEach((b) => b.addEventListener('click', () => openAccounts(b.dataset.likeManage)));
 }
 function renderLikeEvents(events) {
   const box = $('#likesEvents');
@@ -2886,6 +2864,7 @@ function handleLikesEvent(data) {
   }
 }
 $('#btnLikesSync').addEventListener('click', syncLikesNow);
+$('#btnLikesOpenExtensions')?.addEventListener('click', () => showPage('extensions'));
 $('#btnLikesRefresh').addEventListener('click', loadLikes);
 $('#btnLikesReport').addEventListener('click', () => call('openLikesReport').catch(() => {}));
 $('#likesEnabled').addEventListener('change', (e) => saveLikes({ enabled: e.target.checked }));
@@ -3696,3 +3675,4 @@ $('#btnPodcastLocal')?.addEventListener('click', () => {
   renderPodcastSidebar();
   renderPodcastDetail();
 });
+
