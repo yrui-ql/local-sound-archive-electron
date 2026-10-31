@@ -112,16 +112,12 @@ function applyThemeMode(mode, persist = true) {
   document.documentElement.dataset.theme = resolved;
   document.documentElement.dataset.themeMode = currentThemeMode;
   const meta = THEME_META[currentThemeMode];
-  const tone = THEME_META[resolved]?.tone || '';
   $('#themeState').textContent = currentThemeMode === 'system' ? '跟随系统 · ' + THEME_META[resolved].label : meta.label;
   $$('.theme-option').forEach((button) => {
     const active = button.dataset.themeMode === currentThemeMode;
     button.classList.toggle('active', active);
     button.setAttribute('aria-checked', active ? 'true' : 'false');
   });
-  document.documentElement.classList.add('theme-switching');
-  clearTimeout(applyThemeMode._timer);
-  applyThemeMode._timer = setTimeout(() => document.documentElement.classList.remove('theme-switching'), 320);
   if (persist) { try { localStorage.setItem(THEME_KEY, currentThemeMode); } catch { } }
   call('setTheme', { dark: resolved !== 'paper' }).catch(() => {});
 }
