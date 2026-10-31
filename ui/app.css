@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bg: #080a0d;
   --bg-2: #0c0f14;
   --surface: #11161d;
@@ -2331,7 +2331,7 @@ body.booting .summary-ok { opacity: .65; }
 }
 .row:hover { transform: none; background: var(--ui-hover, rgba(255,255,255,.045)); }
 .row:active { background: var(--ui-active, rgba(255,255,255,.065)); }
-.row.selected { box-shadow: inset 2px 0 0 color-mix(in srgb, var(--ui-accent, var(--accent)) 55%, transparent); }
+.row.selected { background: var(--ui-hover, rgba(255,255,255,.045)); box-shadow: none; }
 .row-play {
   width: 29px;
   height: 29px;
