@@ -160,7 +160,7 @@ Agent 只能在 `extensions-dev` 中生成草稿；安装需要健康检查，�
 ```json
 {
   "jobs": [
-    { "id": "daily-news", "title": "每日新闻同步", "defaultIntervalHours": 24 }
+    { "id": "likes-sync", "title": "喜欢同步", "defaultIntervalHours": 24 }
   ]
 }
 ```
@@ -181,3 +181,4 @@ likes.unlike               取消平台喜欢（可选）
 ```
 
 核心通过 `extensionInvoke` 调用扩展方法；平台扩展负责协议细节，核心负责通用容器、差异比较和入库。当前内置三平台仍走内置适配器，迁移为扩展是下一阶段。
+
