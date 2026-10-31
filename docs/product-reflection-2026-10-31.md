@@ -1,4 +1,4 @@
-# 产品反思 · 2026-10-31
+﻿# 产品反思 · 2026-10-31
 
 这不是一份“已经做好了”的总结，而是对这次 LSA / Electron 开发过程的复盘。用户反复指出：功能“接上了”，但没有从用户任务出发设计；我修的是报错，不是体验。
 
@@ -155,6 +155,7 @@
 
 - 用户指出「重新检测」点击后没有反馈，且 DSH 明明装了却没检测到。
 - 已加按钮 busy 态、旋转图标、检测状态行、最短可见时间和结果 toast。
-- DSH 安装路径在注册表 `HKCU\...\Uninstall` 的 `DisplayIcon` 中，不在 PATH；检测现同时查 PATH、常见安装目录和注册表，实测识别到 `D:\DSH\DeepSeek Harness.exe`。
+- DSH 安装路径在注册表 `HKCU\...\Uninstall` 的 `DisplayIcon` 中，不在 PATH；检测现同时查 PATH、常见安装目录和注册表，实测识别到 `<DSH install>\DeepSeek Harness.exe`。
 - Cursor / Codex 本机确实未安装，UI 显示未安装是正确的，不伪造。
 - 新增 `agents` 纯函数单测，测试数 25。
+
