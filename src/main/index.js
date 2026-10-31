@@ -9,6 +9,8 @@ const { LibraryStore } = require('./services/library')
 const { ExtensionStore } = require('./services/extensions')
 const { ExtensionHost } = require('./services/extension-host')
 const { ExtensionScheduler } = require('./services/extension-scheduler')
+const { cleanTitleText, cleanDisplayTitle, safeFileName } = require('./services/files')
+const { buildSourceRegistry } = require('./services/sources')
 const { LikesStore } = require('./services/likes')
 const { AccountService } = require('./services/account')
 
@@ -131,19 +133,6 @@ function mimeFor(file) {
 function audioUrlFor(file) {
   const id = Buffer.from(file, 'utf8').toString('base64url')
   return `http://127.0.0.1:${audioPort}/audio/${audioToken}/${id}`
-}
-
-function cleanTitleText(value) {
-  const raw = String(value || '').trim()
-  return raw
-    .replace(/^\s*\d{1,3}\s*[._\-–—、]\s*/, '')
-    .replace(/^\s*\d{1,3}\s+(?=\S)/, '')
-    .replace(/^\s*\d{1,3}\s*(?=[《【\[])/, '')
-    .trim() || raw
-}
-
-function cleanDisplayTitle(file) {
-  return cleanTitleText(path.basename(file, path.extname(file)))
 }
 
 function publicTrack(file, root) {
@@ -1186,9 +1175,6 @@ app.on('before-quit', () => {
 
 let libraryRefreshPromise = null;
 const localDownloads = new Map();
-function safeFileName(value) {
-  return String(value || '未命名').replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 160) || '未命名';
-}
 function extensionDownloadDir() {
   if (!musicDirs.length) return null;
   return path.join(musicDirs[0], 'LSA Downloads');
@@ -1252,27 +1238,7 @@ async function getExtensionDownloads() {
   return { jobs: Array.from(localDownloads.values()).slice(-100).reverse() };
 }
 async function getSources() {
-  const builtin = [
-    { id: 'netease', name: '网易云音乐', kind: 'builtin', auth: ['qr'], likes: true },
-    { id: 'qq', name: 'QQ 音乐', kind: 'builtin', auth: ['qr'], likes: true },
-    { id: 'soda', name: '汽水音乐', kind: 'builtin', auth: ['cookie'], likes: true },
-  ]
   const data = await extensionStore.list()
-  const extensions = []
-  for (const extension of data.extensions) {
-    if (!extension.enabled) continue
-    for (const source of extension.sources) {
-      if (!source || !source.id) continue
-      extensions.push({
-        id: source.id,
-        name: source.name || extension.name,
-        kind: 'extension',
-        extensionId: extension.id,
-        auth: Array.isArray(source.auth) ? source.auth : source.auth ? [source.auth] : [],
-        likes: !!source.likes,
-      })
-    }
-  }
-  return { sources: [...builtin, ...extensions] }
+  return { sources: buildSourceRegistry(data.extensions) }
 }
 

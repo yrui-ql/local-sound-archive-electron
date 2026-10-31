@@ -1,4 +1,4 @@
-﻿# LSA · 留声
+# LSA · 留声
 
 **中文** | [English](#english)
 
@@ -50,6 +50,7 @@ macOS 使用 unsigned DMG/zip。首次打开需要在 Finder 中右键 → 打�
 
 ```bash
 npm ci
+npm test   # 核心单元测试
 npm start
 ```
 
@@ -121,6 +122,7 @@ docs/                   架构、工作流、ADR 与截图
 
 - [架构](docs/architecture.md)
 - [工程工作流](docs/engineering-workflow.md)
+- [测试策略](docs/testing.md)
 - [开源项目参考架构](docs/reference-architectures.md)
 - [功能交付清单](docs/checklists/feature-delivery.md)
 - [UI 交付门禁](docs/checklists/ui-delivery.md)
@@ -177,6 +179,7 @@ Requires Node.js 22+.
 
 ```bash
 npm ci
+npm test   # core unit tests
 npm start
 ```
 
@@ -248,6 +251,7 @@ More documents:
 
 - [Architecture](docs/architecture.md)
 - [Engineering workflow](docs/engineering-workflow.md)
+- [Testing strategy](docs/testing.md)
 - [Reference architectures](docs/reference-architectures.md)
 - [Feature delivery checklist](docs/checklists/feature-delivery.md)
 - [UI delivery gate](docs/checklists/ui-delivery.md)
@@ -259,6 +263,7 @@ Source, configuration, README and the launcher must pass `privacy-audit`. The of
 ### License
 
 MIT
+
 
 
 

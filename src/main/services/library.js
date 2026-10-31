@@ -57,6 +57,7 @@ class LibraryStore {
     const now = Date.now()
     this.db.exec('BEGIN')
     try {
+      this.db.exec('DELETE FROM tracks')
       for (const track of tracks) {
         insert.run(
           track.id, track.path, track.url, track.title, track.artist, track.album,
@@ -89,3 +90,4 @@ class LibraryStore {
 }
 
 module.exports = { LibraryStore }
+

@@ -20,8 +20,12 @@ class ExtensionHost {
       const finish = (value) => {
         if (settled) return
         settled = true
-        try { child.kill() } catch { }
-        resolve(value)
+        clearTimeout(timer)
+        let done = false
+        const settle = () => { if (done) return; done = true; resolve(value) }
+        child.once('exit', settle)
+        try { child.kill() } catch { settle() }
+        setTimeout(settle, 300)
       }
       const timer = setTimeout(() => finish({ ok: false, error: '扩展响应超时' }), timeoutMs)
       child.stdout.on('data', (chunk) => {
