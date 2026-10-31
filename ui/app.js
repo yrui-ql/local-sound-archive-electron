@@ -1729,7 +1729,9 @@ function updateSeekHover(event) {
   seekHovering = true;
   seekInput.style.setProperty('--hover', (ratio * 100).toFixed(2) + '%');
   seekTip.textContent = formatTime(ratio * duration);
-  seekTip.style.left = Math.max(24, Math.min(rect.width - 24, x)) + 'px';
+  const bubbleX = Math.max(24, Math.min(rect.width - 24, x));
+  seekTip.style.left = (rect.left + bubbleX) + 'px';
+  seekTip.style.top = (rect.bottom + 6) + 'px';
   seekTip.classList.add('show');
 }
 seekProgress.addEventListener('pointermove', updateSeekHover);

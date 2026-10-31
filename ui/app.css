@@ -2730,3 +2730,19 @@ html[data-theme="green"] {
   #btnDetectAgents.is-loading .icon, .agent-loading i { animation: none; }
 }
 \n.col-source { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n
+
+/* FIX: the time bubble must never sit on the seek hit target. */
+.player-progress { height: 14px; }
+.player-progress input[type="range"] {
+  height: 14px;
+  background-size: 100% 4px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.player-progress:hover input[type="range"],
+.player-progress.is-scrubbing input[type="range"] {
+  height: 14px;
+  background-size: 100% 6px;
+}
+.seek-hover-tip,
+.seek-hover-tip.show { pointer-events: none !important; }
