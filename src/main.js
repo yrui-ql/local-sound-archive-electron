@@ -102,8 +102,14 @@ function mimeFor(file) {
     case '.ogg':
     case '.opus': return 'audio/ogg'
     case '.flac': return 'audio/flac'
+    case '.webm': return 'audio/webm'
     default: return 'application/octet-stream'
   }
+}
+
+function audioUrlFor(file) {
+  const id = Buffer.from(file, 'utf8').toString('base64url')
+  return `http://127.0.0.1:${audioPort}/audio/${audioToken}/${id}`
 }
 
 function publicTrack(file, root) {
@@ -112,7 +118,7 @@ function publicTrack(file, root) {
   return {
     id,
     path: file,
-    url: `http://127.0.0.1:${audioPort}/audio/${audioToken}/${id}`,
+    url: audioUrlFor(file),
     title: path.basename(file, path.extname(file)),
     artist: path.basename(path.dirname(file)),
     album: '',
@@ -171,7 +177,9 @@ function startAudioServer() {
         const token = url.pathname.slice(prefix.length)
         const file = Buffer.from(token, 'base64url').toString('utf8')
         const resolved = path.resolve(file)
-        const allowed = musicDirs.some((root) => resolved === root || resolved.startsWith(root + path.sep))
+        const recordingRoot = path.join(DATA_DIR, 'recordings')
+        const allowed = musicDirs.some((root) => resolved === root || resolved.startsWith(root + path.sep)) ||
+          resolved === recordingRoot || resolved.startsWith(recordingRoot + path.sep)
         if (!allowed || !fs.existsSync(resolved)) {
           res.writeHead(404, { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' })
           return res.end('not found')
@@ -577,18 +585,34 @@ function postHostEvent(type, data = {}) {
   mainWindow.webContents.send('host-event', { type, ...data })
 }
 
-async function listRecordings() {
+async function listRecordings(args = {}) {
   await fsp.mkdir(recordingsDir(), { recursive: true }).catch(() => {})
+  const page = Math.max(1, Number(args?.page) || 1)
+  const pageSize = Math.min(100, Math.max(10, Number(args?.pageSize) || 40))
   const files = []
   try {
     for (const entry of await fsp.readdir(recordingsDir(), { withFileTypes: true })) {
       if (!entry.isFile() || !/\.(webm|wav|mp3|m4a)$/i.test(entry.name)) continue
       const file = path.join(recordingsDir(), entry.name)
       const stat = await fsp.stat(file)
-      files.push({ name: entry.name, size: stat.size, mtime: stat.mtimeMs })
+      files.push({ name: entry.name, path: file, url: audioUrlFor(file), size: stat.size, mtime: stat.mtimeMs })
     }
   } catch { }
-  return { files: files.sort((a, b) => b.mtime - a.mtime), dir: recordingsDir() }
+  files.sort((a, b) => b.mtime - a.mtime)
+  const start = (page - 1) * pageSize
+  return { files: files.slice(start, start + pageSize), total: files.length, page, pageSize, hasMore: start + pageSize < files.length, dir: recordingsDir() }
+}
+
+async function deleteRecording(args) {
+  const target = path.resolve(String(args?.path || ''))
+  const root = path.resolve(recordingsDir())
+  if (!target.startsWith(root + path.sep) || !/\.(webm|wav|mp3|m4a)$/i.test(target)) return { ok: false, error: '无效的录音文件' }
+  try {
+    await fsp.unlink(target)
+    return { ok: true }
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
 }
 
 async function saveRecording(args) {
@@ -665,7 +689,9 @@ async function handleCommand(cmd, args) {
     case 'downloadAction':
       return downloadAction(args)
     case 'recordings':
-      return listRecordings()
+      return listRecordings(args)
+    case 'recordDelete':
+      return deleteRecording(args)
     case 'recordStart':
       if (recordingState.active) return { ok: false, error: '正在录音' }
       await fsp.mkdir(recordingsDir(), { recursive: true }).catch(() => {})
@@ -945,6 +971,7 @@ app.on('before-quit', () => {
     try { audioServer.close() } catch { }
   }
 })
+
 
 
 

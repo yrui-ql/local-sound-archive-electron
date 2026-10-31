@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 /* ---------- tiny utils ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -36,6 +36,10 @@ const state = {
   record: false,
   recordSeconds: 0,
   recordPolling: false,
+  recordPage: 1,
+  recordHasMore: true,
+  recordLoading: false,
+  recordPlayingUrl: '',
   fx: { enabled: false, bypass: false, preset: 'flat', intensity: 1, eq: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bass: 0, treble: 0, width: 100 },
   extensions: [],
   extensionSafeMode: false,
@@ -2560,15 +2564,102 @@ $('#likesAutoDeleteDup').addEventListener('change', (e) => saveLikes({ autoDelet
 $('#likesAutoMaintain').addEventListener('change', (e) => saveLikes({ autoMaintain: e.target.checked }));
 
 /* ---------- record ---------- */
-async function loadRecordings() {
-  try {
-    const data = await call('recordings');
-    const files = data.files || [];
-    $('#recordList').innerHTML = files.length
-      ? files.map((f) => '<div class="record-line"><span class="name" title="' + esc(f.name) + '">' + esc(f.name) + '</span><span class="meta">' + formatSize(f.size) + '</span></div>').join('')
-      : emptyState('record', '还没有录音', '点「开始录音」录一段系统声音。');
-  } catch { }
+function recordRow(file) {
+  const date = file.mtime ? new Date(file.mtime).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
+  return '<div class="record-row" data-record-url="' + esc(file.url || '') + '" data-record-path="' + esc(file.path || '') + '">' +
+    '<button class="record-play" type="button" aria-label="播放录音 ' + esc(file.name) + '" title="播放">' +
+      '<svg class="icon"><use href="#i-play"/></svg></button>' +
+    '<div class="record-copy"><strong title="' + esc(file.name) + '">' + esc(file.name) + '</strong>' +
+      '<small>' + formatSize(file.size) + (date ? ' · ' + esc(date) : '') + '</small></div>' +
+    '<button class="record-delete" type="button" aria-label="删除录音 ' + esc(file.name) + '" title="删除">' +
+      '<svg class="icon"><use href="#i-trash"/></svg></button></div>'
 }
+
+async function loadRecordings(reset = true) {
+  if (state.recordLoading) return
+  if (reset) {
+    state.recordPage = 1
+    state.recordHasMore = true
+    $('#recordList').innerHTML = '<div class="record-loading">正在读取录音…</div>'
+  }
+  if (!state.recordHasMore) return
+  state.recordLoading = true
+  try {
+    const data = await call('recordings', { page: state.recordPage, pageSize: 40 })
+    const files = data.files || []
+    if (reset) $('#recordList').innerHTML = ''
+    if (!files.length) {
+      if (reset) $('#recordList').innerHTML = emptyState('record', '还没有录音', '点「开始录音」录一段系统声音。')
+    } else {
+      $('#recordList').insertAdjacentHTML('beforeend', files.map(recordRow).join(''))
+    }
+    state.recordHasMore = !!data.hasMore
+    state.recordPage += 1
+    $('#recordMoreWrap').classList.toggle('hidden', !state.recordHasMore)
+  } catch (err) {
+    if (reset) $('#recordList').innerHTML = '<div class="record-loading">读取录音失败：' + esc(err.message) + '</div>'
+  } finally {
+    state.recordLoading = false
+  }
+}
+
+function stopRecordPlayback() {
+  const audio = $('#recordAudio')
+  if (audio) {
+    audio.pause()
+    audio.removeAttribute('src')
+    audio.load()
+  }
+  state.recordPlayingUrl = ''
+  document.querySelectorAll('.record-row').forEach((row) => {
+    row.classList.remove('playing')
+    const use = row.querySelector('.record-play use')
+    if (use) use.setAttribute('href', '#i-play')
+  })
+}
+
+function toggleRecordPlayback(row) {
+  const url = row.dataset.recordUrl || ''
+  const audio = $('#recordAudio')
+  if (!url || !audio) return
+  if (state.recordPlayingUrl === url && !audio.paused) {
+    audio.pause()
+    return
+  }
+  if (state.recordPlayingUrl !== url) {
+    audio.pause()
+    audio.src = url
+    state.recordPlayingUrl = url
+    document.querySelectorAll('.record-row').forEach((item) => item.classList.remove('playing'))
+    document.querySelectorAll('.record-row .record-play use').forEach((use) => use.setAttribute('href', '#i-play'))
+  }
+  audio.play().catch(() => {})
+  row.classList.add('playing')
+  row.querySelector('.record-play use')?.setAttribute('href', '#i-pause')
+}
+
+$('#recordAudio')?.addEventListener('pause', () => {
+  document.querySelectorAll('.record-row').forEach((row) => {
+    row.classList.remove('playing')
+    row.querySelector('.record-play use')?.setAttribute('href', '#i-play')
+  })
+})
+$('#recordAudio')?.addEventListener('ended', stopRecordPlayback)
+$('#recordList')?.addEventListener('click', async (event) => {
+  const play = event.target.closest('.record-play')
+  if (play) { toggleRecordPlayback(play.closest('.record-row')); return }
+  const remove = event.target.closest('.record-delete')
+  if (!remove) return
+  const row = remove.closest('.record-row')
+  const ok = await openModal({ title: '删除录音', text: '只删除这个录音文件，无法恢复。', confirmLabel: '删除', danger: true })
+  if (!ok) return
+  if (state.recordPlayingUrl === row.dataset.recordUrl) stopRecordPlayback()
+  const res = await call('recordDelete', { path: row.dataset.recordPath }).catch(() => null)
+  if (res && res.ok) { toast('录音已删除', 'ok'); await loadRecordings(); }
+  else toast('删除失败：' + ((res && res.error) || '未知错误'), 'err')
+})
+$('#btnRecordMore')?.addEventListener('click', () => loadRecordings(false))
+
 async function pollRecord() {
   if (state.recordPolling) return;
   state.recordPolling = true;
@@ -2577,7 +2668,11 @@ async function pollRecord() {
     const was = state.record;
     state.record = !!s.recording;
     state.recordSeconds = s.seconds || 0;
-    if (was && !state.record) { await loadRecordings(); const recDir = $('#pathRec').textContent; toast('录音已保存到 ' + (recDir && recDir !== '–' ? recDir : '录音目录'), 'ok'); }
+    if (was && !state.record) {
+      setTimeout(() => loadRecordings(), 900)
+      const recDir = $('#pathRec').textContent;
+      toast('录音已保存到 ' + (recDir && recDir !== '–' ? recDir : '录音目录'), 'ok');
+    }
   } catch { }
   finally { state.recordPolling = false; }
 }
@@ -2596,8 +2691,8 @@ $('#btnRecord').addEventListener('click', async () => {
     if (state.record) {
       const res = await call('recordStop');
       state.record = false; state.recordSeconds = 0;
-      toast('已保存：' + (res.file || 'FLAC'), 'ok');
-      await loadRecordings();
+      toast('已停止，正在保存录音', 'ok');
+      setTimeout(() => loadRecordings(), 900);
     } else {
       await call('recordStart');
       state.record = true; state.recordSeconds = 0;
@@ -2606,6 +2701,15 @@ $('#btnRecord').addEventListener('click', async () => {
   finally { btn.disabled = false; renderRecord(); }
 });
 $('#btnOpenRec').addEventListener('click', () => call('openFolder', { kind: 'recordings' }).catch(() => {}));
+
+/* Keep long recording lists incremental instead of rendering everything. */
+(() => {
+  const sentinel = $('#recordMoreWrap')
+  if (!sentinel || typeof IntersectionObserver !== 'function') return
+  new IntersectionObserver((entries) => {
+    if (entries.some((entry) => entry.isIntersecting) && !state.recordLoading && state.recordHasMore) loadRecordings(false)
+  }, { root: $('#recordList'), rootMargin: '160px' }).observe(sentinel)
+})()
 
 /* ---------- settings ---------- */
 async function loadAppInfo() {
@@ -2886,6 +2990,7 @@ document.addEventListener('keydown', (e) => {
   setInterval(async () => { await pollRecord(); renderRecord(); }, 1000);
   renderRecord();
 })();
+
 
 
 

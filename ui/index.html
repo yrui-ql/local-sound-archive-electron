@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>留声 · LSA</title>
-<link rel="stylesheet" href="app.css?v=20261031-21">
+<link rel="stylesheet" href="app.css?v=20261031-22">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -216,7 +216,7 @@
     </section>
 
     <section class="page" id="page-record" aria-labelledby="recordTitle">
-      <header class="page-head"><div class="page-title"><h1 id="recordTitle">录音</h1><p>录制系统声音，停止后自动转成 FLAC 保存。</p></div></header>
+      <header class="page-head"><div class="page-title"><h1 id="recordTitle">录音</h1><p>录制系统声音，停止后可试听、删除或打开目录。</p></div></header>
       <div class="record-layout">
         <section class="panel recorder">
           <div class="record-top"><span>系统声音</span><span class="record-state-pill" id="recordState">空闲</span></div>
@@ -227,8 +227,10 @@
           <div class="record-tip">保存到 <code id="recordTipPath">–</code></div>
         </section>
         <section class="panel">
-          <div class="panel-head"><div><h2>最近录音</h2><p>系统声音 · FLAC</p></div><button id="btnOpenRec" class="btn ghost small"><svg class="icon"><use href="#i-folder"/></svg>打开</button></div>
-          <div id="recordList" class="list"></div>
+          <div class="panel-head"><div><h2>最近录音</h2><p>系统声音 · WebM</p></div><button id="btnOpenRec" class="btn ghost small"><svg class="icon"><use href="#i-folder"/></svg>打开</button></div>
+          <div id="recordList" class="list record-list"></div>
+          <div id="recordMoreWrap" class="record-more-wrap hidden"><button id="btnRecordMore" class="btn ghost small">加载更多</button></div>
+          <audio id="recordAudio" preload="none"></audio>
         </section>
       </div>
     </section>
@@ -543,9 +545,11 @@
 </div>
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=4"></script>
-<script src="app.js?v=20261031-19"></script>
+<script src="app.js?v=20261031-20"></script>
 </body>
 </html>
+
+
 
 
 
