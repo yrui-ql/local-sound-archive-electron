@@ -2040,6 +2040,8 @@ function setDownloadTab(tab) {
     b.setAttribute('aria-selected', on ? 'true' : 'false');
   });
   renderDownloads();
+  const clear = $('#btnClearDownloads');
+  if (clear) clear.textContent = tab === 'records' ? '清空记录' : '清空等待';
 }
 $$('.segmented [data-dltab]').forEach((b) => b.addEventListener('click', () => setDownloadTab(b.dataset.dltab)));
 async function loadDownloads(showSkeleton = false) {
@@ -2197,11 +2199,15 @@ $('#btnRetryFailed').addEventListener('click', async () => {
   finally { state.busy = false; }
 });
 $('#btnClearDownloads').addEventListener('click', async () => {
-  if (!(await openModal({ title: '清空等待任务', text: '等待中的任务会停止排队；正在下载的一首会完成写入。已下载文件与下载记录保留。', confirmLabel: '清空等待', danger: true }))) return;
+  const records = state.downloadTab === 'records';
+  const ok = await openModal(records
+    ? { title: '清空下载记录', text: '只清空「最近」里的任务记录，不会删除已下载文件，也不会删除音乐库。', confirmLabel: '清空记录', danger: true }
+    : { title: '清空等待任务', text: '等待中的任务会停止排队；正在下载的一首会完成写入。已下载文件与下载记录保留。', confirmLabel: '清空等待', danger: true });
+  if (!ok) return;
   try {
-    const res = await call('downloadAction', { action: 'clear' });
-    if (res && res.ok) { toast('等待任务已清空', 'ok'); await loadDownloads(); }
-    else toast('清空失败：' + (res && res.error ? res.error : '未知错误'), 'err');
+    const res = await call('downloadAction', { action: records ? 'clearRecords' : 'clear' });
+    if (res && res.ok) { toast(records ? '下载记录已清空' : '等待任务已清空', 'ok'); await loadDownloads(); }
+    else toast((records ? '清空记录失败：' : '清空失败：') + (res && res.error ? res.error : '未知错误'), 'err');
   } catch (err) { toast('清空失败：' + err.message, 'err'); }
 });
 

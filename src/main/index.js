@@ -396,6 +396,13 @@ async function downloadAction(args) {
     if (!response.ok) return { ok: false, status: response.status, error: text || `清空失败（HTTP ${response.status}）` }
     return { ok: true, status: response.status, body: text }
   }
+  if (action === 'clearRecords') {
+    if (!admin) return { ok: false, error: '本机下载服务未登录，无法清空下载记录' }
+    const response = await fetch(BACKEND_URL + '/music/api/downloads/records', { method: 'DELETE', headers })
+    const text = await response.text()
+    if (!response.ok) return { ok: false, status: response.status, error: text || `清空记录失败（HTTP ${response.status}）` }
+    return { ok: true, status: response.status, body: text }
+  }
   if (!['retry', 'cancel'].includes(action) || id <= 0) return { ok: false, error: '不支持的任务操作' }
   if (!admin) return { ok: false, error: '本机下载服务未登录' }
   const response = await fetch(`${BACKEND_URL}/music/api/downloads/queue/${id}/${action}`, {
