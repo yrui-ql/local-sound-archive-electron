@@ -316,15 +316,23 @@ async function queueDownloads(songs) {
 async function downloadAction(args) {
   const action = String(args?.action || '')
   const id = Number(args?.id) || 0
+  const admin = await accountService.ensureAdmin()
+  const headers = { 'X-Requested-With': 'XMLHttpRequest' }
+  if (admin) headers.Cookie = accountService.cookie
   if (action === 'clear') {
-    const response = await fetch(BACKEND_URL + '/music/api/downloads/queue', { method: 'DELETE' })
-    return { ok: response.ok, status: response.status, body: await response.text() }
+    if (!admin) return { ok: false, error: '本机下载服务未登录，无法清空队列' }
+    const response = await fetch(BACKEND_URL + '/music/api/downloads/queue', { method: 'DELETE', headers })
+    const text = await response.text()
+    if (!response.ok) return { ok: false, status: response.status, error: text || `清空失败（HTTP ${response.status}）` }
+    return { ok: true, status: response.status, body: text }
   }
   if (!['retry', 'cancel'].includes(action) || id <= 0) return { ok: false, error: '不支持的任务操作' }
+  if (!admin) return { ok: false, error: '本机下载服务未登录' }
   const response = await fetch(`${BACKEND_URL}/music/api/downloads/queue/${id}/${action}`, {
-    method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    method: 'POST', headers,
   })
-  return { ok: response.ok, status: response.status, body: await response.text() }
+  const text = await response.text()
+  return { ok: response.ok, status: response.status, body: text, error: response.ok ? undefined : text }
 }
 async function loadAiConfig() {
   try {
@@ -559,6 +567,34 @@ async function saveRecording(args) {
   }
 }
 
+async function clearFailedTasks() {
+  if (!(await accountService.ensureAdmin())) return { ok: false, error: '本机下载服务未登录，无法清理失败任务' }
+  const headers = { Cookie: accountService.cookie, 'X-Requested-With': 'XMLHttpRequest' }
+  try {
+    const ids = []
+    for (let page = 1; page <= 20; page++) {
+      const response = await fetch(`${BACKEND_URL}/music/api/downloads/queue?page=${page}&page_size=200`, { headers })
+      if (!response.ok) return { ok: false, error: `读取队列失败（HTTP ${response.status}）` }
+      const data = await response.json()
+      const tasks = Array.isArray(data.tasks) ? data.tasks : []
+      for (const task of tasks) {
+        const status = String(task.Status || task.status || '').toLowerCase()
+        const id = Number(task.ID || task.id || 0)
+        if (status === 'failed' && id > 0) ids.push(id)
+      }
+      if (tasks.length < 200) break
+    }
+    let removed = 0
+    for (const id of [...new Set(ids)]) {
+      const response = await fetch(`${BACKEND_URL}/music/api/downloads/queue/${id}`, { method: 'DELETE', headers })
+      if (response.ok) removed++
+    }
+    return { ok: true, removed }
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+}
+
 async function handleCommand(cmd, args) {
   switch (cmd) {
     case 'ready':
@@ -659,7 +695,7 @@ async function handleCommand(cmd, args) {
     case 'qrPoll':
       return accountService.qrPoll(String(args?.source || ''), String(args?.key || ''))
     case 'clearFailed':
-      return { ok: false, error: 'Electron 端暂未接入失败任务清理' }
+      return clearFailedTasks()
     case 'getAiControlStatus':
       return aiStatus()
     case 'setAiControlEnabled': {
