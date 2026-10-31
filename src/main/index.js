@@ -4,13 +4,14 @@ const fsp = require('node:fs/promises')
 const http = require('node:http')
 const crypto = require('node:crypto')
 const path = require('node:path')
-const { spawn } = require('node:child_process')
+const { spawn, spawnSync } = require('node:child_process')
 const { LibraryStore } = require('./services/library')
 const { ExtensionStore } = require('./services/extensions')
 const { ExtensionHost } = require('./services/extension-host')
 const { ExtensionScheduler } = require('./services/extension-scheduler')
 const { cleanTitleText, cleanDisplayTitle, safeFileName, isPathInside } = require('./services/files')
 const { buildSourceRegistry } = require('./services/sources')
+const { candidatePaths, parseDisplayIcon } = require('./services/agents')
 const { LikesStore } = require('./services/likes')
 const { AccountService } = require('./services/account')
 
@@ -581,26 +582,39 @@ async function openSdkDoc(file) {
   return error ? { ok: false, error } : { ok: true }
 }
 
+function findWindowsInstalledApp(displayName, exeName) {
+  if (process.platform !== 'win32') return ''
+  const keys = [
+    'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+    'HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+    'HKLM\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+  ]
+  for (const key of keys) {
+    try {
+      const output = spawnSync('reg.exe', ['query', key, '/s', '/f', displayName], {
+        encoding: 'utf8', windowsHide: true, timeout: 2500,
+      }).stdout || ''
+      const candidate = parseDisplayIcon(output, exeName)
+      if (candidate && fs.existsSync(candidate)) return candidate
+    } catch { }
+  }
+  return ''
+}
+
 function detectAgents() {
   const candidates = [
     { id: 'codex', name: 'Codex', command: 'codex', kind: 'cli' },
     { id: 'claude', name: 'Claude Code', command: 'claude', kind: 'cli' },
-    { id: 'dsh', name: 'DSH', command: 'dsh', kind: 'cli', env: 'DSH_CLI' },
+    { id: 'dsh', name: 'DSH', command: 'dsh', kind: 'gui', env: 'DSH_CLI' },
     { id: 'cursor', name: 'Cursor', command: 'cursor', kind: 'gui' },
   ]
   const pathDirs = String(process.env.PATH || '').split(path.delimiter).filter(Boolean)
   return {
     agents: candidates.map((agent) => {
-      const candidatesPath = []
-      const envPath = agent.env ? process.env[agent.env] : ''
-      if (envPath) candidatesPath.push(envPath)
-      for (const dir of pathDirs) {
-        candidatesPath.push(path.join(dir, process.platform === 'win32' ? agent.command + '.cmd' : agent.command))
-        candidatesPath.push(path.join(dir, process.platform === 'win32' ? agent.command + '.exe' : agent.command))
-      }
-      if (agent.id === 'cursor' && process.platform === 'win32') {
-        candidatesPath.push(path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Cursor', 'Cursor.exe'))
-        candidatesPath.push(path.join(APP_ROOT, '..', '01_ENV', '20_ai', 'cursor', 'app', 'Cursor.exe'))
+      const candidatesPath = candidatePaths(agent, { pathDirs, appRoot: APP_ROOT, env: process.env })
+      if (agent.id === 'dsh' && process.platform === 'win32') {
+        const registryPath = findWindowsInstalledApp('DeepSeek Harness', 'DeepSeek Harness.exe')
+        if (registryPath) candidatesPath.push(registryPath)
       }
       const found = candidatesPath.find((candidate) => candidate && fs.existsSync(candidate)) || ''
       return { ...agent, found: !!found, path: found }
@@ -1237,5 +1251,6 @@ async function getSources() {
   const data = await extensionStore.list()
   return { sources: buildSourceRegistry(data.extensions) }
 }
+
 
 

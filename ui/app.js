@@ -3087,28 +3087,71 @@ async function installSampleExtension() {
   if (res && res.ok) { toast('示例扩展已安装', 'ok'); loadExtensions(); }
   else toast('示例安装失败：' + ((res && res.error) || '未知错误'), 'err');
 }
-async function loadAgents() {
+let agentsLoading = false;
+async function loadAgents(manual = false) {
+  if (agentsLoading) return;
+  agentsLoading = true;
   const list = $('#agentList');
-  list.innerHTML = '<div class="agent-loading">正在检测本机开发工具…</div>';
-  const data = await call('getAgents').catch(() => null);
-  state.agents = (data && data.agents) || [];
-  if (!state.agents.length) { list.innerHTML = emptyState('extensions', '没有检测到开发工具', '安装 Codex、Claude Code 或 DSH 后点重新检测。'); return; }
-  list.innerHTML = state.agents.map((agent) => '<div class="agent-item' + (agent.found ? '' : ' missing') + '">' +
-    '<div class="agent-main"><strong>' + esc(agent.name) + '</strong><small>' + esc(agent.found ? (agent.path || agent.command) : '未检测到 ' + agent.command) + '</small>' +
-    (agent.version ? '<p>' + esc(agent.version) + '</p>' : '') + '</div>' +
-    (agent.found ? '<button class="btn ghost small" data-agent-launch="' + esc(agent.id) + '">' + (agent.kind === 'gui' ? '打开应用' : '开始对话') + '</button>' : '<span class="badge">未安装</span>') +
-    '</div>').join('');
-  list.querySelectorAll('[data-agent-launch]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      const res = await call('launchAgent', { id: button.dataset.agentLaunch }).catch(() => null);
-      if (res && res.ok) toast('已启动：' + (res.agent || '开发工具'), 'ok');
-      else toast('启动失败：' + ((res && res.error) || '未知错误'), 'err');
+  const button = $('#btnDetectAgents');
+  const label = $('#btnDetectAgentsLabel');
+  const stateText = $('#agentDetectState');
+  const startedAt = Date.now();
+  button.disabled = true;
+  button.classList.add('is-loading');
+  button.setAttribute('aria-busy', 'true');
+  if (label) label.textContent = '检测中…';
+  if (stateText) stateText.textContent = '正在检测 Codex / Claude Code / DSH / Cursor…';
+  list.innerHTML = '<div class="agent-loading"><i></i><span>正在扫描本机开发工具…</span></div>';
+  let data = null;
+  try {
+    data = await call('getAgents');
+    state.agents = (data && data.agents) || [];
+    if (manual) {
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < 420) await new Promise((resolve) => setTimeout(resolve, 420 - elapsed));
+    }
+    if (!state.agents.length) {
+      list.innerHTML = emptyState('extensions', '没有检测到开发工具', '安装 Codex、Claude Code 或 DSH 后点重新检测。');
+      if (stateText) stateText.textContent = '上次检测：没有发现开发工具';
+      if (manual) toast('检测完成：没有发现开发工具', 'err');
+      return;
+    }
+    list.innerHTML = state.agents.map((agent) => '<div class="agent-item' + (agent.found ? '' : ' missing') + '">' +
+      '<div class="agent-main"><strong>' + esc(agent.name) + '</strong><small>' + esc(agent.found ? (agent.path || agent.command) : '未检测到 ' + agent.command) + '</small>' +
+      (agent.version ? '<p>' + esc(agent.version) + '</p>' : '') + '</div>' +
+      (agent.found ? '<button class="btn ghost small" data-agent-launch="' + esc(agent.id) + '">' + (agent.kind === 'gui' ? '打开应用' : '开始对话') + '</button>' : '<span class="badge">未安装</span>') +
+      '</div>').join('');
+    const found = state.agents.filter((agent) => agent.found).length;
+    if (stateText) stateText.textContent = '上次检测：' + found + ' / ' + state.agents.length + ' 个可用 · ' + new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    if (manual) toast('检测完成：' + found + ' 个开发工具可用', found ? 'ok' : 'err');
+    list.querySelectorAll('[data-agent-launch]').forEach((item) => {
+      item.addEventListener('click', async () => {
+        item.disabled = true;
+        item.textContent = '启动中…';
+        const res = await call('launchAgent', { id: item.dataset.agentLaunch }).catch(() => null);
+        item.disabled = false;
+        item.textContent = item.dataset.agentLaunch === 'cursor' || item.dataset.agentLaunch === 'dsh' ? '打开应用' : '开始对话';
+        if (res && res.ok) toast('已启动：' + (res.agent || '开发工具'), 'ok');
+        else toast('启动失败：' + ((res && res.error) || '未知错误'), 'err');
+      });
     });
-  });
+  } catch (err) {
+    state.agents = [];
+    list.innerHTML = emptyState('extensions', '检测失败', err.message || '无法获取本机工具列表', '<button class="btn ghost small" data-agent-retry>重试</button>');
+    if (stateText) stateText.textContent = '检测失败：' + (err.message || '未知错误');
+    list.querySelector('[data-agent-retry]')?.addEventListener('click', () => loadAgents(true));
+    if (manual) toast('检测失败：' + (err.message || '未知错误'), 'err');
+  } finally {
+    agentsLoading = false;
+    button.disabled = false;
+    button.classList.remove('is-loading');
+    button.removeAttribute('aria-busy');
+    if (label) label.textContent = '重新检测';
+  }
 }
 $('#btnInstallExtension').addEventListener('click', installExtensionFromFolder);
 $('#btnInstallSample').addEventListener('click', installSampleExtension);
-$('#btnDetectAgents').addEventListener('click', loadAgents);
+$('#btnDetectAgents').addEventListener('click', () => loadAgents(true));
 $('#btnOpenExtensions').addEventListener('click', () => call('openFolder', { kind: 'extensions' }).catch(() => {}));
 $('#btnSafeMode').addEventListener('click', async () => {
   const next = !state.extensionSafeMode;
