@@ -2691,3 +2691,29 @@ select.native-select {
 .row-leading .row-eq i { display: block; width: 3px; height: 8px; border-radius: 2px; background: currentColor; }
 .row-leading .row-eq i:nth-child(2) { height: 13px; }
 .row-leading .row-eq i:nth-child(3) { height: 7px; }
+
+/* Recording uses the same page shell as the library: fixed header, filled panels. */
+#page-record.active {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+#page-record .page-head { flex: none; }
+#page-record .record-layout {
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+#page-record .record-layout > .panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+#page-record .record-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+#page-record .record-list .empty { flex: 1; min-height: 0; }

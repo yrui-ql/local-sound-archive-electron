@@ -76,7 +76,7 @@ For every behavior:
 4. Run `privacy-audit` for source/config.
 5. For a release package, run the artifact audit with the pinned vendor allowlist and launch the packaged app.
 
-UI changes additionally need: keyboard focus, `aria-label` on icon buttons, loading/empty/error states, and no permanent native scrollbars.
+UI changes additionally need to pass `docs/checklists/ui-delivery.md`: every screen in the inventory, every layout invariant, every control, every state, and a current screenshot. A feature is not done because one screen looks acceptable in one state.
 
 ## 6. Release gate
 
