@@ -855,6 +855,7 @@ async function createWindow() {
           const extensions = await safe('getExtensions');
           const maintain = await safe('maintain');
           const theme = await safe('setTheme', { dark: true });
+          const qr = await safe('qrStart', { source: 'netease' });
           if (typeof window.showPage === 'function') window.showPage('settings');
           await new Promise((resolve) => setTimeout(resolve, 350));
           return {
@@ -864,6 +865,9 @@ async function createWindow() {
             windowControls: !!document.querySelector('#windowControls'),
             agents: Array.isArray(agents.agents) ? agents.agents.length : -1,
             likesConfig: !!(likes && likes.config),
+            likesSources: likes && likes.cookies ? likes.cookies : {},
+            qrOk: !!(qr && qr.ok),
+            qrError: qr && qr.error ? qr.error : '',
             extensions: Array.isArray(extensions.extensions) ? extensions.extensions.length : -1,
             maintainOk: !!(maintain && maintain.ok),
             themeOk: !!(theme && theme.ok),
@@ -872,7 +876,7 @@ async function createWindow() {
         })()`, true);
         const report = {
           ok: result.library >= 0 && result.audio && result.aiBridge && result.agents >= 0 &&
-              result.likesConfig && result.extensions >= 0 && result.maintainOk && result.themeOk && result.settingsPage,
+              result.likesConfig && result.qrOk && result.extensions >= 0 && result.maintainOk && result.themeOk && result.settingsPage,
           ...result, dataDir: DATA_DIR, musicDirs,
         };
         fs.writeFileSync(path.join(DATA_DIR, 'smoke.json'), JSON.stringify(report, null, 2));
