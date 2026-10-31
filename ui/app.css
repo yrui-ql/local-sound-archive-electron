@@ -2980,3 +2980,4 @@ html[data-theme="green"] {
 .extension-switch input:checked ~ span { color: var(--ui-accent, var(--accent)); }
 .extension-switch input:focus-visible + .switch { outline: 2px solid var(--ui-accent, var(--accent)); outline-offset: 2px; }
 .extension-switch:has(input:disabled) { cursor: default; opacity: .55; }
+.source-note { flex: none; color: var(--ui-faint, var(--faint)); font-size: 10px; white-space: nowrap; }

@@ -2758,7 +2758,21 @@ function renderLikeSources(sources, cookies) {
       for (const source of ext.sources || []) hidden.add(source.id);
     }
   }
-  $('#likesSources').innerHTML = sources.filter((s) => !hidden.has(s.id)).map((s) => {
+  const visibleSources = sources.filter((s) => !hidden.has(s.id));
+  const known = new Set(visibleSources.map((s) => s.id));
+  const extras = [];
+  for (const ext of state.extensions || []) {
+    if (state.extensionSafeMode || !ext.enabled) continue;
+    const caps = Array.isArray(ext.capabilities) ? ext.capabilities : [];
+    for (const source of ext.sources || []) {
+      if (known.has(source.id)) continue;
+      const auth = Array.isArray(source.auth) ? source.auth.length : source.auth;
+      if (!auth && !source.likes && !caps.includes('resolve')) continue;
+      if (caps.includes('feed') && !source.likes) continue;
+      extras.push({ extension: ext, source, auth: !!auth });
+    }
+  }
+  const rows = visibleSources.map((s) => {
     const connected = !!s.connected;
     const detail = connected
       ? (s.likedTotal ? '喜欢 ' + s.likedTotal + ' 首 · ' + (s.lastSync ? '上次 ' + fmtDate(s.lastSync) : '尚未同步') + (!s.backfilled ? ' · 历史待补齐' : '') : '已登录 · 待首次同步')
@@ -2769,7 +2783,12 @@ function renderLikeSources(sources, cookies) {
       '<span class="source-state ' + (connected ? 'on' : '') + '">' + (connected ? '已连接' : '未登录') + '</span>' +
       '<button class="btn ghost" data-like-manage="' + esc(s.id) + '">' + (connected ? '管理' : '登录') + '</button>' +
       '</div>';
-  }).join('');
+  });
+  const extraRows = extras.map(({ source, auth }) => '<div class="source-row"><div class="source-mark">' + icon('plug') + '</div>' +
+    '<div class="source-copy"><strong>' + esc(source.name || source.id) + '</strong><p>' + (source.likes ? '扩展来源 · 可同步喜欢' : '扩展来源 · 仅搜索与下载，无喜欢同步') + '</p></div>' +
+    '<span class="source-state">扩展</span>' +
+    (source.likes ? '' : '<span class="source-note">无喜欢同步</span>') + '</div>');
+  $('#likesSources').innerHTML = rows.concat(extraRows).join('');
   $('#likesSources').querySelectorAll('[data-like-manage]').forEach((b) => b.addEventListener('click', () => openAccounts(b.dataset.likeManage)));
 }
 function renderLikeEvents(events) {
