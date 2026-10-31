@@ -542,8 +542,13 @@ async function handleCommand(cmd, args) {
       return downloadAction(args)
     case 'recordings':
       return { items: [] }
-    case 'getLikes':
-      return likesStore.status()
+    case 'getLikes': {
+      await accountService.refreshSoda()
+      const status = await likesStore.status()
+      const cookies = await accountService.cookieStatus()
+      for (const source of status.sources) source.connected = !!cookies[source.id]
+      return { ...status, cookies }
+    }
     case 'saveLikes':
       return { ok: true, config: await likesStore.saveConfig(args) }
     case 'syncLikes':

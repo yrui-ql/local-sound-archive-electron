@@ -1,6 +1,7 @@
-﻿const fs = require('node:fs')
+const fs = require('node:fs')
 const path = require('node:path')
 const QRCode = require('qrcode')
+const { DatabaseSync } = require('node:sqlite')
 
 class AccountService {
   constructor(root, baseUrl) {
@@ -44,6 +45,57 @@ class AccountService {
     } catch {
       return false
     }
+  }
+
+  readSodaCookie() {
+    const candidates = [
+      process.env.SODA_COOKIE_DB,
+      process.env.APPDATA ? path.join(process.env.APPDATA, 'SodaMusic', 'Network', 'Cookies') : '',
+      process.env.HOME ? path.join(process.env.HOME, 'Library', 'Application Support', 'SodaMusic', 'Network', 'Cookies') : '',
+    ].filter(Boolean)
+    for (const file of candidates) {
+      try {
+        if (!fs.existsSync(file)) continue
+        const db = new DatabaseSync(file, { readOnly: true })
+        const rows = db.prepare("SELECT name, value FROM cookies WHERE host_key LIKE '%qishui.com' AND length(value) > 0").all()
+        db.close()
+        const seen = new Set()
+        const parts = []
+        for (const row of rows) {
+          if (!row.value || seen.has(row.name)) continue
+          seen.add(row.name)
+          parts.push(row.name + '=' + row.value)
+        }
+        if (parts.length >= 8) return parts.join('; ')
+      } catch { }
+    }
+    return ''
+  }
+
+  async refreshSoda() {
+    if (!(await this.ensureAdmin())) return false
+    const cookie = this.readSodaCookie()
+    if (!cookie) return false
+    try {
+      const response = await fetch(this.baseUrl + '/music/cookies', {
+        method: 'POST',
+        headers: { Cookie: this.cookie, 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({ soda: cookie }),
+      })
+      return response.ok
+    } catch { return false }
+  }
+
+  async cookieStatus() {
+    const result = { soda: false, netease: false, qq: false }
+    if (!(await this.ensureAdmin())) return result
+    try {
+      const { data } = await this.request('/music/cookies')
+      for (const source of Object.keys(result)) {
+        result[source] = typeof data[source] === 'string' && data[source].trim().length > 0
+      }
+    } catch { }
+    return result
   }
 
   async request(pathname, options = {}) {
@@ -97,5 +149,6 @@ class AccountService {
 }
 
 module.exports = { AccountService }
+
 
 
