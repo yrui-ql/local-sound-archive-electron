@@ -1,0 +1,20 @@
+{
+  "id": "spotify",
+  "name": "Spotify 元数据",
+  "version": "0.1.0",
+  "description": "导入 Spotify 公开歌单的元数据；不下载 DRM 音频。",
+  "runtime": "node",
+  "entry": "index.mjs",
+  "kind": "source",
+  "capabilities": ["playlist", "resolve", "health"],
+  "sources": [
+    {
+      "id": "spotify",
+      "name": "Spotify",
+      "auth": [],
+      "likes": false,
+      "metadataOnly": true
+    }
+  ],
+  "permissions": ["network", "cache"]
+}

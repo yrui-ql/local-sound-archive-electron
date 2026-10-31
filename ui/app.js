@@ -2785,7 +2785,7 @@ function renderLikeSources(sources, cookies) {
       '</div>';
   });
   const extraRows = extras.map(({ source, auth }) => '<div class="source-row"><div class="source-mark">' + icon('plug') + '</div>' +
-    '<div class="source-copy"><strong>' + esc(source.name || source.id) + '</strong><p>' + (source.likes ? '扩展来源 · 可同步喜欢' : '扩展来源 · 仅搜索与下载，无喜欢同步') + '</p></div>' +
+    '<div class="source-copy"><strong>' + esc(source.name || source.id) + '</strong><p>' + (source.likes ? '扩展来源 · 可同步喜欢' : source.metadataOnly ? '扩展来源 · 仅元数据，不支持下载' : '扩展来源 · 仅搜索与下载，无喜欢同步') + '</p></div>' +
     '<span class="source-state">扩展</span>' +
     (source.likes ? '' : '<span class="source-note">无喜欢同步</span>') + '</div>');
   $('#likesSources').innerHTML = rows.concat(extraRows).join('');
@@ -3738,3 +3738,39 @@ $('#btnPodcastLocal')?.addEventListener('click', () => {
   renderPodcastSidebar();
   renderPodcastDetail();
 });
+
+
+/* Spotify playlist import */
+function closeSpotifyImport() {
+  $('#spotifyImportModal')?.classList.add('hidden');
+  document.body.classList.remove('modal-open');
+}
+async function importSpotifyPlaylist() {
+  const input = $('#spotifyPlaylistUrl');
+  const url = input ? input.value.trim() : '';
+  if (!url) { input?.focus(); return; }
+  const status = $('#spotifyImportStatus');
+  const list = $('#spotifyImportList');
+  status.textContent = '正在读取公开歌单…';
+  list.innerHTML = '';
+  const response = await call('extensionInvoke', { id: 'spotify', method: 'playlist.import', params: { url }, timeoutMs: 120000 }).catch((error) => ({ ok: false, error: error.message }));
+  if (!response || !response.ok) {
+    status.textContent = '导入失败：' + ((response && response.error) || 'Spotify 扩展不可用');
+    return;
+  }
+  const result = response.result || {};
+  const tracks = Array.isArray(result.tracks) ? result.tracks : [];
+  const playlist = result.playlist || {};
+  status.textContent = (playlist.title || 'Spotify 歌单') + ' · ' + tracks.length + ' 首 · 仅元数据，不能下载';
+  list.innerHTML = tracks.map((track, index) => '<div class="spotify-import-track"><span>' + String(index + 1).padStart(2, '0') + '</span><div><b>' + esc(track.title) + '</b><small>' + esc(track.artist || '') + '</small></div></div>').join('');
+}
+$('#btnSpotifyImport')?.addEventListener('click', () => {
+  $('#spotifyImportModal')?.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  $('#spotifyImportStatus').textContent = '';
+  $('#spotifyImportList').innerHTML = '';
+  $('#spotifyPlaylistUrl')?.focus();
+});
+$('#spotifyImportCancel')?.addEventListener('click', closeSpotifyImport);
+$('#spotifyImportOk')?.addEventListener('click', importSpotifyPlaylist);
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !$('#spotifyImportModal')?.classList.contains('hidden')) closeSpotifyImport(); });

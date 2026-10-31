@@ -2981,3 +2981,13 @@ html[data-theme="green"] {
 .extension-switch input:focus-visible + .switch { outline: 2px solid var(--ui-accent, var(--accent)); outline-offset: 2px; }
 .extension-switch:has(input:disabled) { cursor: default; opacity: .55; }
 .source-note { flex: none; color: var(--ui-faint, var(--faint)); font-size: 10px; white-space: nowrap; }
+
+/* Spotify playlist metadata import */
+.spotify-import-card { width: min(590px, calc(100vw - 48px)); }
+.spotify-import-card .field { width: 100%; height: 36px; margin-top: 14px; padding: 0 11px; border: 1px solid var(--ui-line-strong, var(--line-strong)); border-radius: 7px; background: var(--ui-input, var(--input)); color: var(--ui-text, var(--ink)); font: inherit; font-size: 12px; }
+.spotify-import-card .field:focus { outline: 2px solid var(--ui-accent, var(--accent)); outline-offset: 1px; }
+.spotify-import-list { max-height: 260px; overflow-y: auto; margin-top: 12px; border-top: 1px solid var(--ui-line, var(--line)); }
+.spotify-import-track { display: grid; grid-template-columns: 26px minmax(0,1fr); align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--ui-line, var(--line)); }
+.spotify-import-track > span { color: var(--ui-faint, var(--faint)); font-family: var(--mono); font-size: 10px; }
+.spotify-import-track b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-text-2, var(--ink-2)); font-size: 11.5px; }
+.spotify-import-track small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; color: var(--ui-muted, var(--muted)); font-size: 10px; }

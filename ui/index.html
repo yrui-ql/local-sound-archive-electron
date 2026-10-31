@@ -14,7 +14,7 @@ try {
   }
 } catch (error) {}
 </script>
-<link rel="stylesheet" href="app.css?v=20261031-90">
+<link rel="stylesheet" href="app.css?v=20261031-91">
 </head>
 <body class="booting">
 <div class="window-chrome" aria-hidden="false">
@@ -169,6 +169,7 @@ try {
     <section class="page" id="page-search" aria-labelledby="searchTitle">
       <header class="page-head">
         <div class="page-title"><h1 id="searchTitle">搜索下载</h1><p>一个搜索框，聚合平台；下载统一落到本地音乐库。</p></div>
+        <div class="head-actions"><button id="btnSpotifyImport" class="btn ghost small">导入 Spotify 歌单</button></div>
       </header>
 
       <form id="searchForm" class="search-hero" role="search">
@@ -608,6 +609,18 @@ try {
     </div>
   </div>
 
+  <div id="spotifyImportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="spotifyImportTitle">
+    <div class="modal-card spotify-import-card">
+      <div class="modal-kicker">外部来源</div>
+      <h3 id="spotifyImportTitle">导入 Spotify 歌单</h3>
+      <p>只读取公开歌单元数据；Spotify 音频受 DRM 保护，不提供下载。</p>
+      <input id="spotifyPlaylistUrl" class="field" type="url" placeholder="https://open.spotify.com/playlist/..." aria-label="Spotify 歌单链接">
+      <div id="spotifyImportStatus" class="small-text" role="status"></div>
+      <div id="spotifyImportList" class="spotify-import-list"></div>
+      <div class="modal-actions"><button id="spotifyImportCancel" class="btn ghost">取消</button><button id="spotifyImportOk" class="btn primary">导入</button></div>
+    </div>
+  </div>
+
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalText">
     <div class="modal-card">
       <div class="modal-kicker">请确认</div>
@@ -620,10 +633,11 @@ try {
 <script src="i18n.js?v=20261031-16"></script>
 <script src="shell.js?v=9"></script>
 <script src="pure.js?v=3"></script>
-<script src="app.js?v=20261031-77"></script>
+<script src="app.js?v=20261031-78"></script>
 <script src="custom-select.js?v=1"></script>
 </body>
 </html>
+
 
 
 

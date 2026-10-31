@@ -253,3 +253,9 @@
 - 用户指出 YouTube Music 已启用，但喜欢同步“来源”没有它；并且 Spotify/Bandcamp 也没落地。
 - 已把已启用扩展的 source 并入来源清单：YouTube 现在可见，并明确标注“扩展来源 · 仅搜索与下载，无喜欢同步”，不伪造同步按钮。
 - YouTube 的 likes 需要 Google/YouTube Music 登录与喜欢库能力，当前扩展未实现；Spotify/Bandcamp 仍未实现，必须在交付说明里如实列出。
+
+## 追加（Spotify/Bandcamp 真落地）
+
+- 通过本机 Clash 代理实测：Spotify embed 歌单可读 50 首；Bandcamp 公开 autocomplete 可搜到专辑。
+- 已新增 `spotify` 和 `bandcamp` 扩展：Spotify `playlist.import` 返回元数据；Bandcamp `search` 返回目录元数据；两者 resolve 明确拒绝 DRM 下载。
+- 搜索页新增“导入 Spotify 歌单”，实测导入 Today’s Top Hits 50 首；来源清单一并显示，且标注仅元数据。
