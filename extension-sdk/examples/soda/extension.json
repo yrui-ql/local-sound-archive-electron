@@ -1,0 +1,26 @@
+{
+  "id": "soda",
+  "name": "汽水音乐（扩展）",
+  "version": "0.1.0",
+  "description": "汽水音乐来源扩展：本机 Cookie 登录、搜索、下载入队、喜欢列表。",
+  "runtime": "node",
+  "entry": "index.mjs",
+  "kind": "source",
+  "capabilities": ["search", "resolve", "auth", "likes", "health"],
+  "sources": [
+    {
+      "id": "soda",
+      "name": "汽水音乐",
+      "auth": ["cookie"],
+      "likes": true
+    }
+  ],
+  "permissions": ["network", "auth", "cache"],
+  "jobs": [
+    {
+      "id": "likes-sync",
+      "title": "汽水喜欢同步",
+      "defaultIntervalHours": 24
+    }
+  ]
+}

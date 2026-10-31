@@ -788,7 +788,9 @@ async function handleCommand(cmd, args) {
       let result = { songs: [], count: 0, errors: [] }
       try {
         const backend = await searchBackend(query)
-        result.songs.push(...(backend.songs || []))
+        const registered = buildSourceRegistry((await extensionStore.list()).extensions)
+        const overridden = new Set(registered.filter((source) => source.kind === 'extension').map((source) => source.id))
+        result.songs.push(...(backend.songs || []).filter((song) => !overridden.has(song.source)))
       } catch (error) {
         result.errors.push('内置音源：' + error.message)
       }
@@ -1219,6 +1221,14 @@ async function downloadExtensionSong(song) {
     const resolved = await extensionHost.resolve(song.extensionId, song, staging);
     if (!resolved.ok) throw new Error(resolved.error || resolved.result?.error || '扩展没有返回下载结果');
     const result = resolved.result || {};
+    if (result.queued) {
+      await fsp.rm(staging, { recursive: true, force: true }).catch(() => {});
+      job.status = 'success';
+      job.queued = true;
+      job.message = result.message || '已交给平台下载队列';
+      postHostEvent('extension-download', { id: job.id, status: 'success', name: job.name, queued: true });
+      return job;
+    }
     const sourceFile = path.resolve(String(result.file || ''));
     if (!sourceFile.startsWith(path.resolve(staging) + path.sep) || !fs.existsSync(sourceFile)) throw new Error('扩展返回的下载文件无效');
     const targetDir = extensionDownloadDir();

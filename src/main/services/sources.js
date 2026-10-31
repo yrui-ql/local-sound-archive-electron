@@ -21,7 +21,9 @@ function buildSourceRegistry(extensions = []) {
       })
     }
   }
-  return [...BUILTIN_SOURCES, ...registered]
+  const overridden = new Set(registered.map((source) => source.id))
+  return [...BUILTIN_SOURCES.filter((source) => !overridden.has(source.id)), ...registered]
 }
 
 module.exports = { BUILTIN_SOURCES, buildSourceRegistry }
+
