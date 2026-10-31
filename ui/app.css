@@ -2928,3 +2928,10 @@ html[data-theme="green"] {
 .likes-source-entry b { display: block; color: var(--ui-text, var(--ink)); font-size: 12px; font-weight: 540; }
 .likes-source-entry p { margin: 4px 0 0; color: var(--ui-muted, var(--muted)); font-size: 10.5px; line-height: 1.6; }
 .likes-source-entry .btn { flex: none; }
+
+.account-scope { display: flex; flex-direction: column; gap: 12px; padding: 4px 0 8px; }
+.account-scope-row { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--ui-line, var(--line)); border-radius: 10px; background: var(--ui-surface-2, var(--surface-2)); }
+.account-scope-copy { flex: 1; min-width: 0; }
+.account-scope-copy strong { display: block; color: var(--ui-text, var(--ink)); font-size: 13px; font-weight: 540; }
+.account-scope-copy p { margin: 4px 0 0; color: var(--ui-muted, var(--muted)); font-size: 11px; line-height: 1.55; }
+.account-scope-actions { display: flex; align-items: center; gap: 6px; flex: none; }

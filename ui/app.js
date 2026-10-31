@@ -2528,15 +2528,26 @@ $('#btnClearDownloads').addEventListener('click', async () => {
 
 /* ---------- account / native QR login ---------- */
 function resetAccountView() {
+  state.account.scope = null;
   $('#accountCard').classList.remove('login-mode');
   $('#qrPanel').classList.add('hidden');
   $('#accountTitle').textContent = '平台账号';
   $('#accountSub').textContent = '在客户端内扫码登录，不打开网页。';
+  const note = $('#accountNote');
+  if (note) note.textContent = '汽水音乐不需要在这里登录：客户端会读取本机已登录汽水客户端的登录态。网易云 / QQ 扫码成功后 Cookie 只保存在本机数据目录，不上传、不打印。';
 }
 function openAccounts(source) {
   if (state.account.closeTimer) { clearTimeout(state.account.closeTimer); state.account.closeTimer = null; }
   state.account.previous = document.activeElement;
   resetAccountView();
+  state.account.scope = source || null;
+  if (source) {
+    const name = source === 'soda' ? '汽水音乐' : source === 'netease' ? '网易云音乐' : 'QQ 音乐';
+    $('#accountTitle').textContent = name;
+    $('#accountSub').textContent = source === 'soda' ? '读取本机汽水客户端登录态。' : '扫码登录，不打开网页。';
+    const note = $('#accountNote');
+    if (note && source === 'soda') note.textContent = '汽水音乐不需要扫码：留声直接读取本机汽水客户端登录态；如果刚登录客户端，点「重新读取」即可。';
+  }
   $('#accountModal').classList.remove('hidden');
   document.body.classList.add('modal-open');
   $('#accountClose').focus();
@@ -2561,6 +2572,27 @@ function renderAccountList() {
     return;
   }
   const cookies = data.cookies || {};
+  const scope = state.account.scope;
+  if (scope) {
+    const s = (data.sources || []).find((item) => item.id === scope) || { id: scope, name: scope, connected: false };
+    const connected = !!s.connected;
+    const detail = scope === 'soda' ? (connected ? '已读取本机汽水客户端登录态' : '没有找到本机汽水客户端登录态') : (connected ? '已保存本机 Cookie' : '尚未登录');
+    $('#accountList').innerHTML = '<div class="account-scope">' +
+      '<div class="account-scope-row"><div class="account-source-mark">' + icon(scope === 'soda' ? 'disc' : scope === 'netease' ? 'search' : 'queue') + '</div>' +
+      '<div class="account-scope-copy"><strong>' + esc(s.name) + '</strong><p>' + esc(detail) + '</p></div>' +
+      '<span class="status-pill ' + (connected ? 'status-success' : 'status-offline') + '">' + (connected ? '已连接' : '未连接') + '</span></div>' +
+      '<div class="account-scope-actions">' +
+      (scope === 'soda' ? '<button class="btn ghost small" data-account-refresh>重新读取</button>' : '<button class="btn ' + (connected ? 'ghost' : 'primary') + ' small" data-account-source="' + esc(scope) + '">' + (connected ? '重新扫码' : '扫码登录') + '</button>') +
+      '</div></div>';
+    $('#accountList').querySelectorAll('[data-account-source]').forEach((b) => b.addEventListener('click', () => startQr(b.dataset.accountSource)));
+    $('#accountList').querySelectorAll('[data-account-refresh]').forEach((b) => b.addEventListener('click', async () => {
+      b.disabled = true;
+      await loadLikes();
+      renderAccountList();
+      toast('已重新读取本机登录态', 'ok');
+    }));
+    return;
+  }
   $('#accountList').innerHTML = (data.sources || []).map((s) => {
     const connected = !!s.connected;
     const isSoda = s.id === 'soda';
