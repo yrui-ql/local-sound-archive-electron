@@ -529,7 +529,7 @@ function recordRecent(track) {
   if (!track || !track.url) return;
   state.recent = state.recent.filter((x) => x.url !== track.url);
   state.recent.unshift({
-    url: track.url, title: track.title || '', artist: track.artist || '', album: track.album || '',
+    url: track.url, id: track.id || '', path: track.path || '', title: track.title || '', artist: track.artist || '', album: track.album || '',
     size: track.size || 0, ext: track.ext || '', addedAt: track.addedAt || '', at: new Date().toISOString(),
   });
   state.recent = state.recent.slice(0, 60);
@@ -554,6 +554,27 @@ function displayTitle(value) {
     .replace(/^\s*\d{1,3}\s*(?=[《【\[])/, '')
     .trim() || raw;
 }
+function resolveRecentTrack(track) {
+  if (!track) return null;
+  const byPath = track.path ? state.library.find((item) => item.path === track.path) : null;
+  if (byPath) return byPath;
+  const title = displayTitle(track.title);
+  const matches = state.library.filter((item) =>
+    displayTitle(item.title) === title && (!track.artist || item.artist === track.artist)
+  );
+  return matches.find((item) => !track.size || item.size === track.size) || matches[0] || null;
+}
+
+async function playRecent(track) {
+  if (!state.libraryLoaded) await loadLibrary();
+  const resolved = resolveRecentTrack(track);
+  if (!resolved) {
+    toast('这首歌已不在音乐库，或文件已被移动/删除', 'err');
+    return;
+  }
+  playTrack(resolved, filteredLibrary());
+}
+
 function renderRecent() {
   const list = $('#recentList');
   if (!list) return;
@@ -576,7 +597,7 @@ function renderRecent() {
   list.querySelectorAll('[data-recent-i]').forEach((el) => {
     el.addEventListener('click', () => {
       const track = state.recent[Number(el.dataset.recentI)];
-      if (track) playTrack(track, state.recent);
+      if (track) playRecent(track);
     });
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -765,6 +786,14 @@ $('#btnRefresh').addEventListener('click', loadLibrary);
 
 /* ---------- player ---------- */
 const audio = $('#audio');
+let playAttempt = 0;
+let lastAudioErrorAt = 0;
+function playbackError(message) {
+  const now = Date.now();
+  if (now - lastAudioErrorAt < 1400) return;
+  lastAudioErrorAt = now;
+  toast(message, 'err');
+}
 audio.crossOrigin = 'anonymous';
 let seekHovering = false;
 function setPlayerArt(track) {
@@ -1160,6 +1189,7 @@ function playTrack(track, list) {
   pendingResume = getSavedPosition(track.url);
   recordRecent(track);
   state.isPlaying = false;
+  const attempt = ++playAttempt;
   audio.src = track.url;
   audio.volume = Number($('#volume').value) / 100;
   audio.muted = false;
@@ -1167,7 +1197,10 @@ function playTrack(track, list) {
   updateTransport();
   updatePlayButton();
   if (queueOpen) renderQueueDrawer();
-  audio.play().catch((err) => toast('无法播放：' + err.message, 'err'));
+  audio.play().catch((err) => {
+    if (attempt !== playAttempt || err.name === 'AbortError' || /interrupted by a new load/i.test(err.message)) return;
+    playbackError('无法播放：' + err.message);
+  });
   updateRowPlayIcons();
 }
 function togglePlay() {
@@ -1334,7 +1367,9 @@ audio.addEventListener('ended', () => {
   if (state.repeat === 'one') { audio.currentTime = 0; audio.play().catch(() => {}); return; }
   nextTrack(true);
 });
-audio.addEventListener('error', () => toast('这个文件无法在客户端内播放（编码或文件可能不完整）', 'err'));
+audio.addEventListener('error', () => {
+  playbackError('这个文件无法在客户端内播放（编码或文件可能不完整）');
+});
 window.addEventListener('beforeunload', saveLastPlayback);
 window.addEventListener('pagehide', saveLastPlayback);
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveLastPlayback(); });
