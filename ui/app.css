@@ -2718,3 +2718,23 @@ select.native-select {
 }
 #page-record .record-list .empty { flex: 1; min-height: 0; }
 
+
+/* Library skeleton mirrors the real row grid, instead of floating bars. */
+#libSkeleton .skeleton-row {
+  display: grid;
+  grid-template-columns: 34px minmax(220px, 2.3fr) 64px 64px 72px;
+  align-items: center;
+  gap: 10px;
+  height: 61px;
+  padding: 0 9px;
+  border-bottom: 1px solid var(--ui-line, var(--line));
+}
+#libSkeleton .sk-index { width: 14px; height: 8px; justify-self: center; }
+#libSkeleton .sk-cover { display: flex; align-items: center; gap: 11px; min-width: 0; }
+#libSkeleton .sk-lines { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+#libSkeleton .sk-line { height: 9px; }
+#libSkeleton .sk-cell { width: 52px; height: 8px; }
+#libSkeleton .sk-cell.w-date { width: 42px; }
+#libSkeleton .sk-cell.w-size { width: 46px; justify-self: end; }
+#libSkeleton .sk-badge { width: 44px; height: 18px; border-radius: 5px; }
+#libSkeleton .sk { background: linear-gradient(90deg, color-mix(in srgb, var(--ui-text, var(--ink)) 6%, transparent), color-mix(in srgb, var(--ui-text, var(--ink)) 12%, transparent), color-mix(in srgb, var(--ui-text, var(--ink)) 6%, transparent)); background-size: 220% 100%; animation: shimmer 1.5s linear infinite; }

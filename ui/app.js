@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 /* ---------- tiny utils ---------- */
 const $ = (sel) => document.querySelector(sel);
@@ -716,10 +716,16 @@ if (libScrollRoot) {
   }, { passive: true });
 }
 function skeletonRows(n) {
-  return Array.from({ length: n }, () => '<div class="skeleton-row"><div class="sk sk-art"></div><div class="sk-lines"><div class="sk sk-line w60"></div><div class="sk sk-line w30"></div></div><div class="sk sk-line" style="width:18%"></div><div class="sk sk-line" style="width:9%"></div></div>').join('');
+  return Array.from({ length: n }, () => '<div class="skeleton-row">' +
+    '<span class="sk sk-index"></span>' +
+    '<div class="sk-cover"><span class="sk sk-art"></span><div class="sk-lines"><span class="sk sk-line w60"></span><span class="sk sk-line w30"></span></div></div>' +
+    '<span class="sk sk-cell w-date"></span>' +
+    '<span class="sk sk-badge"></span>' +
+    '<span class="sk sk-cell w-size"></span>' +
+  '</div>').join('');
 }
 async function loadLibrary() {
-  $('#libSkeleton').innerHTML = skeletonRows(6);
+  $('#libSkeleton').innerHTML = skeletonRows(10);
   $('#libSkeleton').classList.remove('hidden');
   $('#libList').innerHTML = '';
   try {
@@ -3047,7 +3053,7 @@ document.addEventListener('keydown', (e) => {
   loadPlayerPrefs();
   state.recent = readRecent();
   $$('.info-btn').forEach((b) => { b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-controls', 'infoPopover'); });
-  $('#libSkeleton').innerHTML = skeletonRows(6);
+  $('#libSkeleton').innerHTML = skeletonRows(10);
   $('#searchSkeleton').classList.add('hidden');
   $('#downloadsSkeleton').classList.add('hidden');
   try {
@@ -3063,6 +3069,8 @@ document.addEventListener('keydown', (e) => {
   setInterval(async () => { await pollRecord(); renderRecord(); }, 1000);
   renderRecord();
 })();
+
+
 
 
 
