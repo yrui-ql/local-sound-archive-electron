@@ -34,3 +34,19 @@ if (controls && desktop) {
 if (drag && desktop) {
   drag.addEventListener('dblclick', () => desktop.window.toggleMaximize())
 }
+// Hide scrollbars until the user actually scrolls a panel.
+(() => {
+  const selector = '.main,.sidebar,.account-card,.fx-body,.queue-list,.lyrics-list,.search-results,.settings-main'
+  const timers = new WeakMap()
+  document.addEventListener('scroll', (event) => {
+    const target = event.target
+    if (!(target instanceof Element) || !target.matches(selector)) return
+    target.classList.add('is-scrolling')
+    const previous = timers.get(target)
+    if (previous) clearTimeout(previous)
+    timers.set(target, setTimeout(() => {
+      target.classList.remove('is-scrolling')
+      timers.delete(target)
+    }, 900))
+  }, true)
+})()
