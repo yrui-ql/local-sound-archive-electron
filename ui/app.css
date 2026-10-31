@@ -2769,3 +2769,20 @@ html[data-theme="green"] {
 }
 .track-menu-danger { color: var(--ui-danger, var(--danger)) !important; }
 .track-menu-danger .icon { color: currentColor !important; }
+
+/* Never let the index and the row action overlap during hover/playing transitions. */
+.row-leading .row-play,
+.row-leading .row-eq { display: none; }
+.row-leading .idx { display: grid; }
+.row:hover .row-leading .idx,
+.row:focus-visible .row-leading .idx,
+.row.playing .row-leading .idx { display: none; }
+.row:hover .row-leading .row-play,
+.row:focus-visible .row-leading .row-play { display: grid; }
+.row.playing:not(.is-audible) .row-leading .row-play {
+  display: grid;
+  opacity: 1;
+  pointer-events: auto;
+}
+.row.playing.is-audible .row-leading .row-play { display: none !important; }
+.row.playing.is-audible .row-leading .row-eq { display: flex !important; }
