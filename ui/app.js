@@ -22,6 +22,7 @@ const state = {
   isPlaying: false,
   playQueue: [],
   queueIndex: -1,
+  playHistory: [],
   shuffle: false,
   repeat: 'off',
   busy: false,
@@ -194,7 +195,7 @@ function initUiScale() {
 const SHORTCUT_KEY = 'musicArchiveShortcuts';
 const SHORTCUT_ACTIONS = [
   { id: 'togglePlay', label: '播放 / 暂停', hint: '和下方播放按钮相同', run: () => togglePlay() },
-  { id: 'prevTrack', label: '上一首', hint: '切到队列中的上一首', run: () => prevTrack() },
+  { id: 'prevTrack', label: '上一首', hint: '回到实际听过的上一首', run: () => prevTrack() },
   { id: 'nextTrack', label: '下一首', hint: '切到队列中的下一首', run: () => nextTrack() },
   { id: 'focusSearch', label: '聚焦音乐库搜索', hint: '打开音乐库并聚焦搜索框', run: () => { showPage('library'); setTimeout(() => $('#libSearch').focus(), 30); } },
   { id: 'toggleQueue', label: '打开 / 关闭播放队列', hint: '和播放器右侧队列按钮相同', run: () => { queueOpen ? closeQueueDrawer() : openQueueDrawer(); } },
@@ -1120,6 +1121,7 @@ async function deleteTrackWithConfirm(track) {
     state.playing = null;
     state.isPlaying = false;
     state.playQueue = state.playQueue.filter((item) => item.url !== track.url);
+    state.playHistory = state.playHistory.filter((item) => item.url !== track.url);
     state.queueIndex = 0;
     updateTransport();
     updatePlayButton();
@@ -1272,8 +1274,16 @@ function ensureQueue(track, list) {
   state.queueIndex = q.findIndex((x) => x.url === track.url);
   if (state.queueIndex < 0) state.queueIndex = 0;
 }
-function playTrack(track, list) {
+function rememberPlayedTrack(track) {
+  if (!track || !track.url) return;
+  const last = state.playHistory[state.playHistory.length - 1];
+  if (last && last.url === track.url) return;
+  state.playHistory.push(track);
+  if (state.playHistory.length > 200) state.playHistory.shift();
+}
+function playTrack(track, list, options = {}) {
   if (!track) return;
+  if (!options.fromHistory && state.playing && state.playing.url !== track.url) rememberPlayedTrack(state.playing);
   if (state.playing) saveLastPlayback();
   ensureQueue(track, list);
   state.playing = track;
@@ -1316,8 +1326,15 @@ function nextTrack(auto = false) {
   playTrack(state.playQueue[i], state.playQueue);
 }
 function prevTrack() {
+  let previous = state.playHistory.pop();
+  while (previous && state.playing && previous.url === state.playing.url) previous = state.playHistory.pop();
+  if (previous) { playTrack(previous, state.playQueue, { fromHistory: true }); return; }
+  if (state.playing) {
+    audio.currentTime = 0;
+    if (audio.paused) audio.play().catch(() => {});
+    return;
+  }
   if (!state.playQueue.length) return;
-  if (audio.currentTime > 3) { audio.currentTime = 0; return; }
   let i = state.queueIndex - 1;
   if (i < 0) i = state.repeat === 'all' ? state.playQueue.length - 1 : 0;
   playTrack(state.playQueue[i], state.playQueue);
@@ -3154,6 +3171,7 @@ document.addEventListener('keydown', (e) => {
   setInterval(async () => { await pollRecord(); renderRecord(); }, 1000);
   renderRecord();
 })();
+
 
 
 

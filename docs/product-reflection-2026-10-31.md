@@ -119,3 +119,9 @@
 - `maintain` 返回的是 summary 对象，renderer 当字符串调用 `.split()`，所以点击后抛 `res.summary.split is not a function`。
 - 已做类型收窄，状态栏显示真实结果：`1366 首 · 95 GB`。
 - 已通过 Electron CDP 在真实应用里调用 `call('maintain')` 验证返回结构，再验证 UI 摘要字符串；不是只跑语法检查。
+
+## 追加教训（上一首/下一首）
+
+- 用户指出上一首应按真实听过顺序返回，不受随机/循环模式影响；下一首才按模式。
+- 已增加 `state.playHistory`，每次真实切歌记录上一首；上一首从历史弹出，`fromHistory` 不再反向写入。
+- 通过 Electron CDP 实际播三首后验证：上一首回到第二首，历史只剩第一首。
