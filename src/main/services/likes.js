@@ -64,6 +64,18 @@ class LikesStore {
     return cfg
   }
 
+  async markRun(at = new Date()) {
+    const cfg = await this.loadConfig()
+    const when = at instanceof Date ? at : new Date(at)
+    cfg.lastRunAt = when.toISOString()
+    cfg.nextRunAt = cfg.enabled
+      ? new Date(when.getTime() + cfg.intervalHours * 3600000).toISOString()
+      : null
+    cfg.updatedAt = when.toISOString()
+    await fsp.writeFile(this.configPath, JSON.stringify(cfg, null, 2))
+    return cfg
+  }
+
   async ignoreTrack(track) {
     await this.ensure()
     const ignored = await this.readJson(this.ignoredPath, [])

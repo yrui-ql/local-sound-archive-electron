@@ -548,10 +548,15 @@ async function copyAiMcpConfig() {
   return { ok: true }
 }
 
+let likesSyncPromise = null
+let likesSchedulerTimer = null
+let likesSchedulerBootTimer = null
+
 async function syncLikesNow() {
+  if (likesSyncPromise) return likesSyncPromise
   const script = path.join(APP_ROOT, 'scripts', 'likes-sync.mjs')
   if (!fs.existsSync(script)) return { ok: false, error: '喜欢同步脚本缺失' }
-  return new Promise((resolve) => {
+  likesSyncPromise = new Promise((resolve) => {
     const child = require('node:child_process').spawn(process.execPath, [script, '--apply'], {
       cwd: APP_ROOT,
       env: {
@@ -568,8 +573,9 @@ async function syncLikesNow() {
     child.stderr.on('data', (chunk) => { output += chunk.toString() })
     const timer = setTimeout(() => { try { child.kill() } catch { } }, 10 * 60 * 1000)
     child.on('error', (error) => { clearTimeout(timer); resolve({ ok: false, error: error.message }) })
-    child.on('exit', (code) => {
+    child.on('exit', async (code) => {
       clearTimeout(timer)
+      try { await likesStore.markRun() } catch { }
       let lastRun = null
       try { lastRun = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'likes', 'last-run.json'), 'utf8')) } catch { }
       resolve({
@@ -580,7 +586,32 @@ async function syncLikesNow() {
         error: code === 0 ? null : (output.trim().split('\n').slice(-1)[0] || '同步失败'),
       })
     })
-  })
+  }).finally(() => { likesSyncPromise = null })
+  return likesSyncPromise
+}
+
+async function tickLikesScheduler() {
+  if (likesSyncPromise) return
+  try {
+    const cfg = await likesStore.loadConfig()
+    if (!cfg.enabled || !cfg.nextRunAt) return
+    if (Date.parse(cfg.nextRunAt) > Date.now()) return
+    await syncLikesNow()
+  } catch { }
+}
+
+function startLikesScheduler() {
+  if (likesSchedulerTimer) return
+  if (likesSchedulerBootTimer) clearTimeout(likesSchedulerBootTimer)
+  likesSchedulerBootTimer = setTimeout(() => { tickLikesScheduler().catch(() => {}) }, 5000)
+  likesSchedulerTimer = setInterval(() => { tickLikesScheduler().catch(() => {}) }, 60 * 1000)
+}
+
+function stopLikesScheduler() {
+  if (likesSchedulerTimer) clearInterval(likesSchedulerTimer)
+  if (likesSchedulerBootTimer) clearTimeout(likesSchedulerBootTimer)
+  likesSchedulerTimer = null
+  likesSchedulerBootTimer = null
 }
 
 async function openSdkDoc(file) {
@@ -1140,6 +1171,7 @@ app.whenReady().then(async () => {
   await startAudioServer()
   await createWindow()
   await extensionScheduler.start()
+  startLikesScheduler()
   createTray()
   if (aiConfig.enabled) await startAiServer()
   app.on('activate', showMainWindow)
@@ -1154,6 +1186,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   forceQuit = true
   extensionScheduler?.stop()
+  stopLikesScheduler()
   stopAiServer()
   if (audioServer) {
     try { audioServer.close() } catch { }

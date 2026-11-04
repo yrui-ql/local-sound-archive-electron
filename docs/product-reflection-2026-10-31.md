@@ -259,3 +259,9 @@
 - 通过本机 Clash 代理实测：Spotify embed 歌单可读 50 首；Bandcamp 公开 autocomplete 可搜到专辑。
 - 已新增 `spotify` 和 `bandcamp` 扩展：Spotify `playlist.import` 返回元数据；Bandcamp `search` 返回目录元数据；两者 resolve 明确拒绝 DRM 下载。
 - 搜索页新增“导入 Spotify 歌单”，实测导入 Today’s Top Hits 50 首；来源清单一并显示，且标注仅元数据。
+
+## 追加（定时喜欢同步不生效）
+
+- 根因：`LikesStore` 只保存 nextRunAt，主进程根本没有 tick 检查；手动 syncLikes 也不会推进 nextRunAt。
+- 已加主进程调度器：启动 5 秒后检查一次，之后每 60 秒检查；到期调用 syncLikesNow；同一时间只允许一个同步；运行后 markRun 写 lastRunAt/nextRunAt；退出清理 timer。
+- 用 nextRunAt 已过期的配置实测：启动后同步执行，配置推进到下一次 24 小时。
