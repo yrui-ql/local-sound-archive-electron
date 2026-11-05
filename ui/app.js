@@ -405,7 +405,7 @@ function toast(text, kind = '', action = null) {
 }
 
 function openModal({ title, text, confirmLabel = '确定', cancelLabel = '取消', danger = false }) {
-  closeAllOverlays('modal');
+  closeAllOverlays('modal', true);
   return new Promise((resolve) => {
     const modal = $('#modal');
     const previous = document.activeElement;
@@ -494,7 +494,7 @@ function closeInfo() {
 }
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.info-btn');
-  if (btn) { e.preventDefault(); e.stopPropagation(); closeAllOverlays('info'); toggleInfo(btn); return; }
+  if (btn) { e.preventDefault(); e.stopPropagation(); closeAllOverlays('info', true); toggleInfo(btn); return; }
   if (!e.target.closest('#infoPopover')) closeInfo();
 });
 document.addEventListener('pointerover', (e) => {
@@ -1155,7 +1155,7 @@ function removeQueueItem(index) {
 }
 function openQueueDrawer() {
   if (queueOpen) return;
-  closeAllOverlays('queue');
+  closeAllOverlays('queue', true);
   if (lyricsOpen) closeLyricsView();
   if ($('#fxDrawer').classList.contains('open')) closeFx();
   queueOpen = true;
@@ -1224,7 +1224,7 @@ async function deleteTrackWithConfirm(track) {
 
 function openTrackMenu(track, list, x, y) {
   if (!track) return;
-  closeAllOverlays('track');
+  closeAllOverlays('track', true);
   trackMenuTrack = track;
   trackMenuList = list || null;
   const menu = $('#trackMenu');
@@ -1302,7 +1302,7 @@ window.addEventListener('resize', closeTrackMenu);
 let sleepTimer = null;
 let sleepMinutes = 0;
 function openSleepMenu() {
-  closeAllOverlays('sleep');
+  closeAllOverlays('sleep', true);
   closeTrackMenu();
   const menu = $('#sleepMenu');
   menu.classList.remove('hidden');
@@ -2141,7 +2141,7 @@ function buildFxUi() {
   $('#fxReset').addEventListener('click', () => { state.fx = { enabled: false, bypass: false, preset: 'flat', intensity: 1, eq: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], bass: 0, treble: 0, width: 100 }; saveFx(); applyFx(); renderFx(); });
 }
 function openFx() {
-  closeAllOverlays('fx');
+  closeAllOverlays('fx', true);
   loadFx();
   if (!ensureFxGraph()) return;
   if (fxGraph.ctx && fxGraph.ctx.state === 'suspended') fxGraph.ctx.resume().catch(() => { });
@@ -2562,7 +2562,7 @@ function resetAccountView() {
   if (note) note.textContent = '汽水音乐不需要在这里登录：客户端会读取本机已登录汽水客户端的登录态。网易云 / QQ 扫码成功后 Cookie 只保存在本机数据目录，不上传、不打印。';
 }
 function openAccounts(source) {
-  closeAllOverlays('account');
+  closeAllOverlays('account', true);
   if (state.account.closeTimer) { clearTimeout(state.account.closeTimer); state.account.closeTimer = null; }
   state.account.previous = document.activeElement;
   resetAccountView();
@@ -3576,7 +3576,7 @@ function closeExtensionAuth() {
   $('#extAuthImage').removeAttribute('src');
 }
 async function openExtensionAuth(extension, result) {
-  closeAllOverlays('extauth');
+  closeAllOverlays('extauth', true);
   const imageUrl = result.image_url || '';
   let image = imageUrl;
   if (!image && result.url) {
@@ -3792,7 +3792,7 @@ async function importSpotifyPlaylist() {
   list.innerHTML = tracks.map((track, index) => '<div class="spotify-import-track"><span>' + String(index + 1).padStart(2, '0') + '</span><div><b>' + esc(track.title) + '</b><small>' + esc(track.artist || '') + '</small></div></div>').join('');
 }
 $('#btnSpotifyImport')?.addEventListener('click', () => {
-  closeAllOverlays('spotify');
+  closeAllOverlays('spotify', true);
   $('#spotifyImportModal')?.classList.remove('hidden');
   document.body.classList.add('modal-open');
   $('#spotifyImportStatus').textContent = '';
@@ -3805,7 +3805,28 @@ document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && 
 
 
 /* Overlay uniqueness: one popover / drawer / menu at a time. */
-function closeAllOverlays(except = '') {
+function hasOpenOverlay(except = '') {
+  if (except !== 'queue' && queueOpen) return true;
+  if (except !== 'fx' && $('#fxDrawer')?.classList.contains('open')) return true;
+  if (except !== 'track' && !$('#trackMenu')?.classList.contains('hidden')) return true;
+  if (except !== 'sleep' && !$('#sleepMenu')?.classList.contains('hidden')) return true;
+  if (except !== 'info' && !$('#infoPopover')?.hidden) return true;
+  if (except !== 'account' && !$('#accountModal')?.classList.contains('hidden')) return true;
+  if (except !== 'extauth' && !$('#extAuthModal')?.classList.contains('hidden')) return true;
+  if (except !== 'spotify' && !$('#spotifyImportModal')?.classList.contains('hidden')) return true;
+  if (except !== 'customselect' && document.querySelector('.custom-select-menu:not(.hidden)')) return true;
+  return false;
+}
+let overlaySwitchTimer = 0;
+function closeAllOverlays(except = '', instant = false) {
+  if (instant && hasOpenOverlay(except)) {
+    document.body.classList.add('overlay-switching');
+    if (overlaySwitchTimer) clearTimeout(overlaySwitchTimer);
+    overlaySwitchTimer = setTimeout(() => {
+      document.body.classList.remove('overlay-switching');
+      overlaySwitchTimer = 0;
+    }, 190);
+  }
   if (except !== 'queue' && queueOpen) closeQueueDrawer();
   if (except !== 'fx' && $('#fxDrawer')?.classList.contains('open')) closeFx();
   if (except !== 'track' && !$('#trackMenu')?.classList.contains('hidden')) closeTrackMenu();
@@ -3816,7 +3837,7 @@ function closeAllOverlays(except = '') {
   if (except !== 'spotify' && !$('#spotifyImportModal')?.classList.contains('hidden')) closeSpotifyImport();
   if (except !== 'customselect') document.dispatchEvent(new CustomEvent('lsa:close-popovers'));
 }
-document.addEventListener('lsa:overlay-open', () => closeAllOverlays('customselect'));
+document.addEventListener('lsa:overlay-open', () => closeAllOverlays('customselect', true));
 document.addEventListener('click', (event) => {
   if (event.target.closest('#queueDrawer, #queueScrim, #fxDrawer, #fxScrim, #trackMenu, #sleepMenu, #infoPopover, #accountModal, #extAuthModal, #spotifyImportModal, #modal, .custom-select')) return;
   if (event.target.closest('#btnQueue, #btnFx, #btnSleep, .info-btn, #btnSpotifyImport, #btnLogin, [data-like-manage], #btnLikesSync')) return;

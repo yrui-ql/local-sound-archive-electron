@@ -2991,3 +2991,39 @@ html[data-theme="green"] {
 .spotify-import-track > span { color: var(--ui-faint, var(--faint)); font-family: var(--mono); font-size: 10px; }
 .spotify-import-track b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ui-text-2, var(--ink-2)); font-size: 11.5px; }
 .spotify-import-track small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; color: var(--ui-muted, var(--muted)); font-size: 10px; }
+
+/* Switching overlays: do not play a full close animation before the next panel. */
+body.overlay-switching .queue-drawer,
+body.overlay-switching .fx-drawer {
+  transition: none !important;
+  animation: none;
+}
+body.overlay-switching .queue-drawer.open,
+body.overlay-switching .fx-drawer.open {
+  animation: overlaySwapIn .15s var(--ease-out, ease) both;
+}
+body.overlay-switching .queue-scrim,
+body.overlay-switching .fx-scrim {
+  animation: none !important;
+  transition: none !important;
+}
+body.overlay-switching .queue-drawer:not(.open),
+body.overlay-switching .fx-drawer:not(.open) {
+  display: none !important;
+}
+body.overlay-switching .fx-drawer.open .fx-preset {
+  animation: none !important;
+}
+body.overlay-switching .track-menu,
+body.overlay-switching .sleep-menu,
+body.overlay-switching .info-popover,
+body.overlay-switching .account-modal,
+body.overlay-switching .modal,
+body.overlay-switching .custom-select-menu {
+  animation: none !important;
+  transition: none !important;
+}
+@keyframes overlaySwapIn {
+  from { opacity: .5; }
+  to { opacity: 1; }
+}
