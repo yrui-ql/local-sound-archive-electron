@@ -270,3 +270,8 @@
 
 - 根因：音乐库 track 没有 addedAt，UI 的“最近添加”解析成 0；同时下载队列完成后只删任务/入 provenance，没有重建库或通知前端。
 - 已给每首歌写 addedAt（birthtime 优先、mtime 回退）；完成队列时 refreshLibrarySoon 并发送 library-changed；实测新增文件出现在最近添加第一位。
+
+## 追加（最近添加排序核对）
+
+- 用后端下载记录核对：Ascendance 20:24:48、发如雪 20:24:30、Luv 20:24:28，三首正是最新记录；最近添加按时间倒序排列。
+- 列表日期列原来显示 mtime 且只到天，无法核对秒/分钟顺序；已改为显示 addedAt，今天/昨天带时分。

@@ -320,6 +320,18 @@ function formatSize(bytes) {
   while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
   return (n >= 10 ? n.toFixed(0) : n.toFixed(1)) + ' ' + units[i];
 }
+function formatAddedTime(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '—';
+  const now = new Date();
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const sameDay = date.toDateString() === now.toDateString();
+  if (sameDay) return '今天 ' + hh + ':' + mm;
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return '昨天 ' + hh + ':' + mm;
+  return date.toLocaleDateString('zh-CN', { year: '2-digit', month: '2-digit', day: '2-digit' }) + ' ' + hh + ':' + mm;
+}
 function formatDateShort(value) {
   const date = new Date(Number(value));
   if (!Number.isFinite(date.getTime())) return '—';
@@ -724,7 +736,7 @@ function renderLibrary() {
     list.innerHTML = shown.map((t, i) => {
       const playing = currentUrl === t.url;
       const selected = state.selectedTrack === t.url;
-      const date = formatDateShort(t.mtime);
+      const date = formatAddedTime(t.addedAt || t.mtime);
       return '<div class="row lib-grid' + (playing ? ' playing' : '') + (playing && state.isPlaying ? ' is-audible' : '') + (selected ? ' selected' : '') + '" data-url="' + esc(t.url) + '" tabindex="0" role="option" aria-selected="' + (selected ? 'true' : 'false') + '" aria-label="' + esc(t.title + '，' + t.artist) + '">' +
         '<div class="row-leading"><span class="idx">' + String(i + 1).padStart(2, '0') + '</span><button class="row-play" tabindex="-1" data-play="' + esc(t.url) + '" aria-label="播放 ' + esc(t.title) + '">' + icon('play') + '</button><span class="row-eq" aria-hidden="true"><i></i><i></i><i></i></span></div>' +
         '<div class="cover-cell">' + artMarkup(t.title, t.artist) + '<div class="cell"><div class="cell-title" title="' + esc(t.title) + '">' + esc(t.title) + '</div><div class="cell-sub" title="' + esc(t.artist) + '">' + esc(t.artist) + '</div></div></div>' +
