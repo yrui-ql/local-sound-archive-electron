@@ -1153,6 +1153,12 @@ function removeQueueItem(index) {
   updateTransport();
   toast('已从队列移除', 'ok');
 }
+function showOverlayScrim() {
+  $('#overlayScrim')?.classList.remove('hidden');
+}
+function hideOverlayScrimIfIdle() {
+  if (!queueOpen && !$('#fxDrawer')?.classList.contains('open')) $('#overlayScrim')?.classList.add('hidden');
+}
 function openQueueDrawer() {
   if (queueOpen) return;
   closeAllOverlays('queue', true);
@@ -1161,7 +1167,7 @@ function openQueueDrawer() {
   queueOpen = true;
   $('#queueDrawer').classList.add('open');
   $('#queueDrawer').setAttribute('aria-hidden', 'false');
-  $('#queueScrim').classList.remove('hidden');
+  showOverlayScrim();
   $('#btnQueue').setAttribute('aria-expanded', 'true');
   renderQueueDrawer();
   setTimeout(() => $('#queueClose').focus(), 120);
@@ -1171,13 +1177,14 @@ function closeQueueDrawer() {
   queueOpen = false;
   $('#queueDrawer').classList.remove('open');
   $('#queueDrawer').setAttribute('aria-hidden', 'true');
-  $('#queueScrim').classList.add('hidden');
+  hideOverlayScrimIfIdle();
   $('#btnQueue').setAttribute('aria-expanded', 'false');
   $('#btnQueue').focus();
 }
 $('#btnQueue').addEventListener('click', () => { queueOpen ? closeQueueDrawer() : openQueueDrawer(); });
 $('#queueClose').addEventListener('click', closeQueueDrawer);
 $('#queueScrim').addEventListener('click', closeQueueDrawer);
+$('#overlayScrim').addEventListener('click', () => { if (queueOpen) closeQueueDrawer(); else if ($('#fxDrawer').classList.contains('open')) closeFx(); });
 $('#queueClear').addEventListener('click', () => {
   state.playQueue = [];
   state.queueIndex = -1;
@@ -2146,7 +2153,7 @@ function openFx() {
   if (!ensureFxGraph()) return;
   if (fxGraph.ctx && fxGraph.ctx.state === 'suspended') fxGraph.ctx.resume().catch(() => { });
   renderFx();
-  $('#fxScrim').classList.remove('hidden');
+  showOverlayScrim();
   $('#fxDrawer').classList.add('open');
   $('#fxDrawer').setAttribute('aria-hidden', 'false');
   $('#btnFx').setAttribute('aria-expanded', 'true');
@@ -2158,7 +2165,7 @@ function closeFx() {
   stopFxMeter();
   $('#fxDrawer').classList.remove('open');
   $('#fxDrawer').setAttribute('aria-hidden', 'true');
-  setTimeout(() => $('#fxScrim').classList.add('hidden'), 220);
+  hideOverlayScrimIfIdle();
   $('#btnFx').setAttribute('aria-expanded', 'false');
   document.body.classList.remove('fx-open');
   $('#btnFx').focus();
