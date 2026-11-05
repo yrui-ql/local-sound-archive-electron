@@ -265,3 +265,8 @@
 - 根因：`LikesStore` 只保存 nextRunAt，主进程根本没有 tick 检查；手动 syncLikes 也不会推进 nextRunAt。
 - 已加主进程调度器：启动 5 秒后检查一次，之后每 60 秒检查；到期调用 syncLikesNow；同一时间只允许一个同步；运行后 markRun 写 lastRunAt/nextRunAt；退出清理 timer。
 - 用 nextRunAt 已过期的配置实测：启动后同步执行，配置推进到下一次 24 小时。
+
+## 追加（同步成功但最近添加没有新歌）
+
+- 根因：音乐库 track 没有 addedAt，UI 的“最近添加”解析成 0；同时下载队列完成后只删任务/入 provenance，没有重建库或通知前端。
+- 已给每首歌写 addedAt（birthtime 优先、mtime 回退）；完成队列时 refreshLibrarySoon 并发送 library-changed；实测新增文件出现在最近添加第一位。

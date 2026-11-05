@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session, Tray, Menu, nativeImage } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell, desktopCapturer, session, Tray, Menu, nativeImage } = require('electron')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const http = require('node:http')
@@ -187,6 +187,7 @@ async function buildLibrary() {
       const stat = await fsp.stat(file)
       track.size = stat.size
       track.mtime = stat.mtimeMs
+      track.addedAt = new Date(stat.birthtimeMs || stat.mtimeMs || Date.now()).toISOString()
     } catch { }
     formats[track.ext] = (formats[track.ext] || 0) + 1
     totalBytes += Number(track.size) || 0
@@ -360,6 +361,8 @@ async function getDownloads() {
     if (finished.length) {
       const refreshed = await fetchQueueWithAuth()
       queue = refreshed.queue
+      await refreshLibrarySoon().catch(() => {})
+      postHostEvent('library-changed', { reason: 'backend-download' })
     }
     const records = await backendJson('/music/api/downloads/records?page=1&page_size=100')
     if (provenanceStore && records && Array.isArray(records.records)) await provenanceStore.ingestRecords(records.records)
