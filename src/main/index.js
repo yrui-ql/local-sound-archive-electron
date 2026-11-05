@@ -39,6 +39,8 @@ const CONFIG_PATH = path.join(DATA_DIR, 'config.json')
 const BACKEND_URL = process.env.LSA_BACKEND_URL || 'http://127.0.0.1:18088'
 
 let mainWindow = null
+let thumbarState = { playing: false, hasTrack: false }
+let thumbarIcons = null
 const STARTUP_LOG = path.join(APP_ROOT, 'data', 'startup.log')
 function logStart(message) {
   try {
@@ -701,6 +703,31 @@ function recordingsDir() {
   return path.join(DATA_DIR, 'recordings')
 }
 
+function sendTaskbarControl(action) {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  mainWindow.webContents.send('host-event', { type: 'taskbar-control', action })
+}
+function loadThumbarIcons() {
+  if (thumbarIcons) return thumbarIcons
+  const dir = path.join(APP_ROOT, 'build', 'thumbar')
+  const image = (name) => {
+    try { return nativeImage.createFromPath(path.join(dir, name)) } catch { return null }
+  }
+  thumbarIcons = { prev: image('prev.png'), play: image('play.png'), pause: image('pause.png'), next: image('next.png') }
+  return thumbarIcons
+}
+function applyTaskbarControls() {
+  if (process.platform !== 'win32' || !mainWindow || mainWindow.isDestroyed()) return
+  if (typeof mainWindow.setThumbarButtons !== 'function') return
+  const icons = loadThumbarIcons()
+  if (!icons.prev || !icons.play || !icons.pause || !icons.next) return
+  const disabled = thumbarState.hasTrack ? [] : ['disabled']
+  mainWindow.setThumbarButtons([
+    { icon: icons.prev, tooltip: '上一首', flags: disabled, click: () => sendTaskbarControl('prev') },
+    { icon: thumbarState.playing ? icons.pause : icons.play, tooltip: thumbarState.playing ? '暂停' : '播放', flags: disabled, click: () => sendTaskbarControl('toggle') },
+    { icon: icons.next, tooltip: '下一首', flags: disabled, click: () => sendTaskbarControl('next') },
+  ])
+}
 function postHostEvent(type, data = {}) {
   if (!mainWindow || !mainWindow.webContents) return
   mainWindow.webContents.send('host-event', { type, ...data })
@@ -1018,6 +1045,13 @@ async function handleCommand(cmd, args) {
       await saveConfig()
       return { ok: true, scale }
     }
+    case 'setTaskbarState':
+      thumbarState = {
+        playing: !!args?.playing,
+        hasTrack: !!args?.hasTrack,
+      }
+      applyTaskbarControls()
+      return { ok: true }
     case 'copyText':
       require('electron').clipboard.writeText(String(args?.text || ''))
       return { ok: true }
@@ -1173,6 +1207,7 @@ app.whenReady().then(async () => {
   await loadAiConfig()
   await startAudioServer()
   await createWindow()
+  applyTaskbarControls()
   await extensionScheduler.start()
   startLikesScheduler()
   createTray()

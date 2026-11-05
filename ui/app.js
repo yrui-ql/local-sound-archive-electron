@@ -284,6 +284,13 @@ function call(cmd, args = {}) {
 if (webview) webview.addEventListener('message', (event) => {
   const msg = event.data;
   if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'taskbar-control') {
+    const action = String(msg.action || '');
+    if (action === 'prev') prevTrack();
+    else if (action === 'next') nextTrack(false);
+    else if (action === 'toggle') togglePlay();
+    return;
+  }
   if (msg.type === 'progress') { setProgress(String(msg.data || '')); return; }
   if (msg.type === 'likes') { handleLikesEvent(msg.data || {}); return; }
   if (msg.type === 'library-changed') { loadLibrary().catch(() => {}); return; }
@@ -949,6 +956,7 @@ function updatePlayButton() {
   $('#playIcon').setAttribute('href', state.isPlaying ? '#i-pause' : '#i-play');
   $('#btnPlay').setAttribute('aria-label', state.isPlaying ? '暂停' : '播放');
   updateRowPlayIcons();
+  call('setTaskbarState', { playing: state.isPlaying, hasTrack: !!state.playing }).catch(() => {});
 }
 function currentPlayMode() {
   if (state.shuffle) return 'shuffle';
