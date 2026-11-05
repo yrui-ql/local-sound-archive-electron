@@ -64,6 +64,7 @@
     }
     const openMenu = () => {
       closeAll()
+      document.dispatchEvent(new CustomEvent('lsa:overlay-open'))
       sync()
       const rect = trigger.getBoundingClientRect()
       menu.classList.remove('hidden')
@@ -110,6 +111,7 @@
     })
     select.addEventListener('change', sync)
     document.addEventListener('pointerdown', (event) => { if (!wrapper.contains(event.target)) close() })
+    document.addEventListener('lsa:close-popovers', () => close())
 
     instances.set(select, { close, sync })
     render()
